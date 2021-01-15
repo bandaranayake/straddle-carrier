@@ -20,15 +20,6 @@ bool showWireframe = false;
 bool showAxes = true;
 bool showGrid = true;
 
-GLfloat initPos[3] = { 0.0, 0.65, 0.0 };
-GLfloat S_WheelMount[3] = { 0.5, 0.4, 0.5 };
-GLfloat S_Bottom[3] = { 0.5, 0.5, 5.2 };
-GLfloat S_Side[3] = { 0.5, 5.2, 0.35 };
-GLfloat S_Top[3] = { 3.6, 0.4, 4.0 };
-GLfloat S_Cabin[3] = { 1.2, 1.2, 1.2 };
-GLfloat S_Spreader[3] = { 1.4, 0.2, 3.0 };
-GLfloat S_Wheel[3] = { 0.65, 0.5 };
-
 void init() {
 	glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
 	glEnable(GL_DEPTH_TEST);
@@ -98,7 +89,7 @@ void drawCube(GLfloat x, GLfloat y, GLfloat z, GLfloat w, GLfloat h, GLfloat l) 
 	glVertex3f(x, y + h, z + l);
 
 	// BACK
-	glColor3f(1.0f, 0.5f, 1.0f);
+	glColor3f(1.0, 0.5, 1.0);
 	glVertex3f(x, y, z);
 	glVertex3f(x, y + h, z);
 	glVertex3f(x + w, y + h, z);
@@ -118,10 +109,6 @@ void drawCube(GLfloat x, GLfloat y, GLfloat z, GLfloat w, GLfloat h, GLfloat l) 
 	glVertex3f(x + w, y + h, z + l);
 	glVertex3f(x + w, y, z + l);
 	glEnd();
-}
-
-void drawCube(GLfloat x, GLfloat y, GLfloat z, GLfloat size[]) {
-	drawCube(x, y, z, size[0], size[1], size[2]);
 }
 
 void drawCabin(GLfloat x, GLfloat y, GLfloat z, GLfloat w, GLfloat h, GLfloat l) {
@@ -183,10 +170,6 @@ void drawCabin(GLfloat x, GLfloat y, GLfloat z, GLfloat w, GLfloat h, GLfloat l)
 	glEnd();
 }
 
-void drawCabin(GLfloat x, GLfloat y, GLfloat z, GLfloat size[]) {
-	drawCabin(x, y, z, size[0], size[1], size[2]);
-}
-
 void drawCylinder(GLfloat radius, GLfloat height) {
 	GLfloat y = 0.0;
 	GLfloat z = 0.0;
@@ -235,8 +218,182 @@ void drawCylinder(GLfloat radius, GLfloat height) {
 	glEnd();
 }
 
-void drawCylinder(GLfloat size[]) {
-	drawCylinder(size[0], size[1]);
+void drawStraddleCarrier() {
+	glPushMatrix();
+	// SIDE 1
+	// WHEEL
+	glPushMatrix();
+	glTranslatef(0.0, 0.0, 0.3);
+	drawCylinder(0.65, 0.5);
+	glPopMatrix();
+
+	glPushMatrix();
+	glTranslatef(0.0, 0.0, 5.0);
+	drawCylinder(0.65, 0.5);
+	glPopMatrix();
+	// WHEEL MOUNT
+	drawCube(0.0, 0.65, 0.0, 0.5, 0.4, 0.5);
+	drawCube(0.0, 0.65, 4.7, 0.5, 0.4, 0.5);
+	// BOTTOM
+	drawCube(0.0, 1.05, 0.0, 0.5, 0.5, 5.2);
+	// SIDE
+	drawCube(0.0, 1.55, 0.6, 0.5, 5.2, 0.35);
+	drawCube(0.0, 1.55, 4.25, 0.5, 5.2, 0.35);
+
+	// SIDE 2
+	// WHEEL
+	glPushMatrix();
+	glTranslatef(3.1, 0.0, 0.3);
+	drawCylinder(0.65, 0.5);
+	glPopMatrix();
+
+	glPushMatrix();
+	glTranslatef(3.1, 0.0, 5.0);
+	drawCylinder(0.65, 0.5);
+	glPopMatrix();
+	// WHEEL MOUNT
+	drawCube(3.1, 0.65, 0.0, 0.5, 0.4, 0.5);
+	drawCube(3.1, 0.65, 4.7, 0.5, 0.4, 0.5);
+	// BOTTOM
+	drawCube(3.1, 1.05, 0.0, 0.5, 0.5, 5.2);
+	// SIDE
+	drawCube(3.1, 1.55, 0.6, 0.5, 5.2, 0.35);
+	drawCube(3.1, 1.55, 4.25, 0.5, 5.2, 0.35);
+
+	// TOP
+	drawCube(0.0, 6.75, 0.6, 3.6, 0.4, 4.0);
+
+	// CABIN
+	drawCabin(0.0, 5.75, 4.6, 1.2, 1.2, 1.2);
+
+	// SPREADER
+	drawCube(1.0, 6.35, 1.1, 1.4, 0.2, 3.0);
+	glPopMatrix();
+}
+
+void drawTruck() {
+	glPushMatrix();
+	// TRAILER
+	// BASE
+	drawCube(0.05, 0.18, 0.4, 0.65, 0.05, 2.5);
+
+	// SIDE 1
+	// WHEELS BACK
+	glPushMatrix();
+	glTranslatef(0.0, 0.0, 0.7);
+	drawCylinder(0.18, 0.1);
+	glPopMatrix();
+
+	glPushMatrix();
+	glTranslatef(0.0, 0.0, 1.08);
+	drawCylinder(0.18, 0.1);
+	glPopMatrix();
+
+	// WHEELS FRONT
+	glPushMatrix();
+	glTranslatef(0.0, 0.0, 2.3);
+	drawCylinder(0.18, 0.1);
+	glPopMatrix();
+
+	glPushMatrix();
+	glTranslatef(0.0, 0.0, 2.68);
+	drawCylinder(0.18, 0.1);
+	glPopMatrix();
+
+	// SIDE 2
+	// WHEELS BACK
+	glPushMatrix();
+	glTranslatef(0.655, 0.0, 0.7);
+	drawCylinder(0.18, 0.1);
+	glPopMatrix();
+
+	glPushMatrix();
+	glTranslatef(0.655, 0.0, 1.08);
+	drawCylinder(0.18, 0.1);
+	glPopMatrix();
+
+	// WHEELS FRONT
+	glPushMatrix();
+	glTranslatef(0.655, 0.0, 2.3);
+	drawCylinder(0.18, 0.1);
+	glPopMatrix();
+
+	glPushMatrix();
+	glTranslatef(0.655, 0.0, 2.68);
+	drawCylinder(0.18, 0.1);
+	glPopMatrix();
+
+	// TRUCK
+	// WHEELS SIDE 1
+	glPushMatrix();
+	glTranslatef(0.0, 0.0, 3.55);
+	drawCylinder(0.18, 0.1);
+	glPopMatrix();
+
+	// WHEELS SIDE 2
+	glPushMatrix();
+	glTranslatef(0.655, 0.0, 3.55);
+	drawCylinder(0.18, 0.1);
+	glPopMatrix();
+
+	// SIDE 1
+	glBegin(GL_TRIANGLE_FAN);
+	glColor3f(0.5, 1.0, 0.5);
+	glVertex3f(0.05, 0.0, 3.0);
+	glVertex3f(0.05, 0.0, 3.9);
+	glVertex3f(0.05, 0.4, 3.9);
+	glVertex3f(0.05, 0.75, 3.75);
+	glVertex3f(0.05, 0.75, 3.0);
+	glEnd();
+
+	// SIDE 2
+	glBegin(GL_TRIANGLE_FAN);
+	glColor3f(0.5, 0.5, 1.0);
+	glVertex3f(0.7, 0.0, 3.0);
+	glVertex3f(0.7, 0.75, 3.0);
+	glVertex3f(0.7, 0.75, 3.75);
+	glVertex3f(0.7, 0.4, 3.9);
+	glVertex3f(0.7, 0.0, 3.9);
+	glEnd();
+
+	glBegin(GL_QUADS);
+	// BACK
+	glColor3f(1.0, 0.5, 1.0);
+	glVertex3f(0.05, 0.0, 3.0);
+	glVertex3f(0.05, 0.75, 3.0);
+	glVertex3f(0.7, 0.75, 3.0);
+	glVertex3f(0.7, 0.0, 3.0);
+
+	// FRONT-TOP
+	glColor3f(0.5, 1.0, 1.0);
+	glVertex3f(0.05, 0.4, 3.9);
+	glVertex3f(0.7, 0.4, 3.9);
+	glVertex3f(0.7, 0.75, 3.75);
+	glVertex3f(0.05, 0.75, 3.75);
+
+	// FRONT-BOTTOM
+	glColor3f(1.0, 0.5, 0.5);
+	glVertex3f(0.05, 0.0, 3.9);
+	glVertex3f(0.7, 0.0, 3.9);
+	glVertex3f(0.7, 0.4, 3.9);
+	glVertex3f(0.05, 0.4, 3.9);
+
+	// TOP
+	glColor3f(1.0, 1.0, 0.5);
+	glVertex3f(0.05, 0.75, 3.0);
+	glVertex3f(0.05, 0.75, 3.75);
+	glVertex3f(0.7, 0.75, 3.75);
+	glVertex3f(0.7, 0.75, 3.0);
+
+	// BOTTOM
+	glColor3f(0.5, 1.0, 1.0);
+	glVertex3f(0.05, 0.0, 3.0);
+	glVertex3f(0.7, 0.0, 3.0);
+	glVertex3f(0.7, 0.0, 3.9);
+	glVertex3f(0.05, 0.0, 3.9);
+	glEnd();
+
+	glPopMatrix();
 }
 
 void display() {
@@ -258,56 +415,7 @@ void display() {
 		drawGrid();
 	}
 
-	glPushMatrix();
-	// SIDE 1
-	// Wheel
-	glPushMatrix();
-	glTranslatef(initPos[0], 0.0, 0.3);
-	drawCylinder(S_Wheel);
-	glPopMatrix();
-
-	glPushMatrix();
-	glTranslatef(initPos[0], 0.0, 0.3 + S_Bottom[2] - S_WheelMount[2]);
-	drawCylinder(S_Wheel);
-	glPopMatrix();
-	// Wheel mount
-	drawCube(initPos[0], initPos[1], initPos[2], S_WheelMount);
-	drawCube(initPos[0], initPos[1], initPos[2] + S_Bottom[2] - S_WheelMount[2], S_WheelMount);
-	// Bottom
-	drawCube(initPos[0], initPos[1] + S_WheelMount[1], initPos[2], S_Bottom);
-	// Side
-	drawCube(initPos[0], initPos[1] + S_WheelMount[1] + S_Bottom[1], initPos[2] + (S_Bottom[2] * 3 / 26), S_Side);
-	drawCube(initPos[0], initPos[1] + S_WheelMount[1] + S_Bottom[1], initPos[2] + S_Bottom[2] - S_Side[2] - (S_Bottom[2] * 3 / 26), S_Side);
-
-	// SIDE 2
-	// Wheel
-	glPushMatrix();
-	glTranslatef(initPos[0] + 3.1, 0.0, 0.3);
-	drawCylinder(S_Wheel);
-	glPopMatrix();
-
-	glPushMatrix();
-	glTranslatef(initPos[0] + 3.1, 0.0, 0.3 + S_Bottom[2] - S_WheelMount[2]);
-	drawCylinder(S_Wheel);
-	glPopMatrix();
-	// Wheel mount
-	drawCube(initPos[0] + 3.1, initPos[1], initPos[2], S_WheelMount);
-	drawCube(initPos[0] + 3.1, initPos[1], initPos[2] + S_Bottom[2] - S_WheelMount[2], S_WheelMount);
-	// Bottom
-	drawCube(initPos[0] + 3.1, initPos[1] + S_WheelMount[1], initPos[2], S_Bottom);
-	// Side
-	drawCube(initPos[0] + 3.1, initPos[1] + S_WheelMount[1] + S_Bottom[1], initPos[2] + (S_Bottom[2] * 3 / 26), S_Side);
-	drawCube(initPos[0] + 3.1, initPos[1] + S_WheelMount[1] + S_Bottom[1], initPos[2] + S_Bottom[2] - S_Side[2] - (S_Bottom[2] * 3 / 26), S_Side);
-
-	// Top
-	drawCube(initPos[0], initPos[1] + S_WheelMount[1] + S_Bottom[1] + S_Side[1], initPos[2] + (S_Bottom[2] * 3 / 26), S_Top);
-
-	// Cabin
-	drawCabin(initPos[0], initPos[1] + S_WheelMount[1] + S_Bottom[1] + S_Side[1] + (S_Top[1] / 2) - S_Cabin[1], initPos[2] + S_Bottom[2] - (S_Bottom[2] * 3 / 26), S_Cabin);
-
-	// Spreader
-	drawCube(initPos[0] + 1, initPos[1] + S_WheelMount[1] + S_Bottom[1] + S_Side[1] - (S_Spreader[1] * 2), initPos[2] + (S_Bottom[2] * 3 / 26) + ((S_Top[2] - S_Spreader[2]) / 2), S_Spreader);
-	glPopMatrix();
+	drawTruck();
 
 	glPopMatrix();
 	glutSwapBuffers();
@@ -363,13 +471,15 @@ void keyboard(unsigned char key, int x, int y) {
 		showGrid = !showGrid;
 	}
 	else if (key == 'r') {
-		camY = 0;
-		rotY = 0;
+		camY = -10;
+		rotY = 145;
 		moveY = 0;
-		moveX = 0;
-		moveZ = 0;
+		moveX = 7;
+		moveZ = 10;
 	}
-
+	else if (key == 'p') {
+		std::cout << camY << "|" << rotY << "|" << moveY << "|" << moveX << "|" << moveZ;
+	}
 	glutPostRedisplay();
 }
 
