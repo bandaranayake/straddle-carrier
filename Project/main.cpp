@@ -5,17 +5,23 @@
 #include <GL/glut.h>
 
 #define PI 3.1415927
-#define TEXTURE_COUNT 9
+#define TEXTURE_COUNT 13
+#define SPREADER_LOWER_LIMIT 0.0
+#define SPREADER_UPPER_LIMIT 0.5
 
 #define TX_METAL_RED 0
-#define TX_GLASS_CABIN 1
-#define TX_GLASS_TRUCK 2
-#define TX_WHEEL1 3
-#define TX_WHEEL2 4
-#define TX_TYRE 5
-#define TX_TRUCK_FRONT1 6
-#define TX_TRUCK_FRONT2 7
-#define TX_TRUCK_BODY 8
+#define TX_METAL_GRAY 1
+#define TX_GLASS_CABIN 2
+#define TX_GLASS_TRUCK 3
+#define TX_WHEEL1 4
+#define TX_WHEEL2 5
+#define TX_TYRE 6
+#define TX_TRUCK_FRONT1 7
+#define TX_TRUCK_FRONT2 8
+#define TX_TRUCK_BODY 9
+#define TX_CONT_FRONT 10
+#define TX_CONT_BACK 11
+#define TX_CONT_SIDE 12
 
 using namespace std;
 
@@ -37,6 +43,8 @@ GLfloat rotZ = 0.0f;
 GLfloat camY = 0.0f;
 GLfloat camX = 0.0f;
 GLfloat camZ = 0.0f;
+
+GLfloat spHeight = 0.0;
 
 bool showWireframe = false;
 bool showAxes = true;
@@ -103,14 +111,18 @@ void loadExternalTextures()
 {
 	BitMapFile* image[TEXTURE_COUNT];
 	image[TX_METAL_RED] = getbmp("textures/metal_red.bmp");
-	image[TX_GLASS_CABIN] = getbmp("textures/galss_cabin.bmp");
-	image[TX_GLASS_TRUCK] = getbmp("textures/galss_truck.bmp");
+	image[TX_METAL_GRAY] = getbmp("textures/metal_gray.bmp");
+	image[TX_GLASS_CABIN] = getbmp("textures/cabin_glass.bmp");
 	image[TX_WHEEL1] = getbmp("textures/wheel1.bmp");
 	image[TX_WHEEL2] = getbmp("textures/wheel2.bmp");
 	image[TX_TYRE] = getbmp("textures/tyre.bmp");
 	image[TX_TRUCK_FRONT1] = getbmp("textures/truck_front_top.bmp");
 	image[TX_TRUCK_FRONT2] = getbmp("textures/truck_front_bottom.bmp");
 	image[TX_TRUCK_BODY] = getbmp("textures/truck_body.bmp");
+	image[TX_GLASS_TRUCK] = getbmp("textures/truck_glass.bmp");
+	image[TX_CONT_FRONT] = getbmp("textures/container_front.bmp");
+	image[TX_CONT_BACK] = getbmp("textures/container_back.bmp");
+	image[TX_CONT_SIDE] = getbmp("textures/container_side.bmp");
 
 	for (int i = 0; i < TEXTURE_COUNT; i++) {
 		glBindTexture(GL_TEXTURE_2D, texture[i]);
@@ -177,9 +189,9 @@ void drawCube(GLfloat x, GLfloat y, GLfloat z, GLfloat w, GLfloat h, GLfloat l, 
 	glBindTexture(GL_TEXTURE_2D, texture[tx[1]]);
 	glBegin(GL_QUADS);
 	glTexCoord2f(0.0, 0.0); glVertex3f(x, y, z);
-	glTexCoord2f(1.0, 0.0); glVertex3f(x + w, y, z);
+	glTexCoord2f(0.0, 1.0); glVertex3f(x + w, y, z);
 	glTexCoord2f(1.0, 1.0); glVertex3f(x + w, y, z + l);
-	glTexCoord2f(0.0, 1.0); glVertex3f(x, y, z + l);
+	glTexCoord2f(1.0, 0.0); glVertex3f(x, y, z + l);
 	glEnd();
 
 	// FRONT
@@ -195,9 +207,9 @@ void drawCube(GLfloat x, GLfloat y, GLfloat z, GLfloat w, GLfloat h, GLfloat l, 
 	glBindTexture(GL_TEXTURE_2D, texture[tx[3]]);
 	glBegin(GL_QUADS);
 	glTexCoord2f(0.0, 0.0); glVertex3f(x, y, z);
-	glTexCoord2f(1.0, 0.0); glVertex3f(x, y + h, z);
+	glTexCoord2f(0.0, 1.0); glVertex3f(x, y + h, z);
 	glTexCoord2f(1.0, 1.0); glVertex3f(x + w, y + h, z);
-	glTexCoord2f(0.0, 1.0); glVertex3f(x + w, y, z);
+	glTexCoord2f(1.0, 0.0); glVertex3f(x + w, y, z);
 	glEnd();
 
 	// LEFT
@@ -213,9 +225,9 @@ void drawCube(GLfloat x, GLfloat y, GLfloat z, GLfloat w, GLfloat h, GLfloat l, 
 	glBindTexture(GL_TEXTURE_2D, texture[tx[5]]);
 	glBegin(GL_QUADS);
 	glTexCoord2f(0.0, 0.0); glVertex3f(x + w, y, z);
-	glTexCoord2f(1.0, 0.0); glVertex3f(x + w, y + h, z);
+	glTexCoord2f(0.0, 1.0); glVertex3f(x + w, y + h, z);
 	glTexCoord2f(1.0, 1.0); glVertex3f(x + w, y + h, z + l);
-	glTexCoord2f(0.0, 1.0); glVertex3f(x + w, y, z + l);
+	glTexCoord2f(1.0, 0.0); glVertex3f(x + w, y, z + l);
 	glEnd();
 
 	glDisable(GL_TEXTURE_2D);
@@ -370,9 +382,10 @@ void drawCabin(GLfloat x, GLfloat y, GLfloat z, GLfloat w, GLfloat h, GLfloat l)
 	glDisable(GL_TEXTURE_2D);
 }
 
-void drawStraddleCarrier() {
+void drawStraddleCarrier(GLfloat spreaderHeight) {
 	int tx_Body[] = { TX_METAL_RED, TX_METAL_RED, TX_METAL_RED, TX_METAL_RED, TX_METAL_RED, TX_METAL_RED };
 	int tx_Wheel[] = { TX_TYRE, TX_WHEEL2, TX_WHEEL2 };
+	int tx_Chain[] = { TX_METAL_GRAY, TX_METAL_GRAY, TX_METAL_GRAY };
 
 	glPushMatrix();
 	// SIDE 1 - WHEELS
@@ -390,7 +403,7 @@ void drawStraddleCarrier() {
 	drawCube(0.0, 0.065, 0.47, 0.05, 0.04, 0.05, tx_Body);
 	// SIDE 1 - BOTTOM
 	drawCube(0.0, 0.105, 0.0, 0.05, 0.05, 0.52, tx_Body);
-	// SIDE 1 - SIDE
+	// SIDE 1 - SIDES
 	drawCube(0.0, 0.155, 0.06, 0.05, 0.52, 0.035, tx_Body);
 	drawCube(0.0, 0.155, 0.425, 0.05, 0.52, 0.035, tx_Body);
 
@@ -409,18 +422,44 @@ void drawStraddleCarrier() {
 	drawCube(0.31, 0.065, 0.47, 0.05, 0.04, 0.05, tx_Body);
 	// SIDE 2 - BOTTOM
 	drawCube(0.31, 0.105, 0.0, 0.05, 0.05, 0.52, tx_Body);
-	// SIDE 2 - SIDE
+	// SIDE 2 - SIDES
 	drawCube(0.31, 0.155, 0.06, 0.05, 0.52, 0.035, tx_Body);
 	drawCube(0.31, 0.155, 0.425, 0.05, 0.52, 0.035, tx_Body);
 
-	// SIDE 2 - TOP
+	// TOP
 	drawCube(0.0, 0.675, 0.06, 0.36, 0.04, 0.4, tx_Body);
 
 	// CABIN
 	drawCabin(0.0, 0.575, 0.46, 0.12, 0.12, 0.12);
 
 	// SPREADER
-	drawCube(0.1, 0.635, 0.11, 0.14, 0.02, 0.3, tx_Body);
+	drawCube(0.11, 0.635 - spreaderHeight, 0.11, 0.14, 0.02, 0.3, tx_Body);
+
+	// SPREADER - CHAINS
+	glPushMatrix();
+	glTranslatef(0.12, 0.637 - spreaderHeight, 0.12);
+	glRotatef(90, 0, 0, 1);
+	drawCylinder(0.003, 0.04 + spreaderHeight, tx_Chain);
+	glPopMatrix();
+
+	glPushMatrix();
+	glTranslatef(0.24, 0.637 - spreaderHeight, 0.12);
+	glRotatef(90, 0, 0, 1);
+	drawCylinder(0.003, 0.04 + spreaderHeight, tx_Chain);
+	glPopMatrix();
+
+	glPushMatrix();
+	glTranslatef(0.24, 0.637 - spreaderHeight, 0.4);
+	glRotatef(90, 0, 0, 1);
+	drawCylinder(0.003, 0.04 + spreaderHeight, tx_Chain);
+	glPopMatrix();
+
+	glPushMatrix();
+	glTranslatef(0.12, 0.637 - spreaderHeight, 0.4);
+	glRotatef(90, 0, 0, 1);
+	drawCylinder(0.003, 0.04 + spreaderHeight, tx_Chain);
+	glPopMatrix();
+
 	glPopMatrix();
 }
 
@@ -430,16 +469,16 @@ void drawTruck() {
 
 	glPushMatrix();
 	// TRAILER - BASE
-	drawCube(0.05, 0.18, 0.4, 0.65, 0.05, 2.5, tx_Body);
+	drawCube(0.05, 0.18, 0.9, 0.65, 0.05, 2.1, tx_Body);
 
 	// TRAILER - WHEELS BACK (SIDE 1)
 	glPushMatrix();
-	glTranslatef(0.0, 0.0, 0.7);
+	glTranslatef(0.0, 0.0, 1.2);
 	drawCylinder(0.18, 0.1, tx_Wheel);
 	glPopMatrix();
 
 	glPushMatrix();
-	glTranslatef(0.0, 0.0, 1.08);
+	glTranslatef(0.0, 0.0, 1.58);
 	drawCylinder(0.18, 0.1, tx_Wheel);
 	glPopMatrix();
 
@@ -456,12 +495,12 @@ void drawTruck() {
 
 	// TRAILER - WHEELS BACK (SIDE 2)
 	glPushMatrix();
-	glTranslatef(0.655, 0.0, 0.7);
+	glTranslatef(0.655, 0.0, 1.2);
 	drawCylinder(0.18, 0.1, tx_Wheel);
 	glPopMatrix();
 
 	glPushMatrix();
-	glTranslatef(0.655, 0.0, 1.08);
+	glTranslatef(0.655, 0.0, 1.58);
 	drawCylinder(0.18, 0.1, tx_Wheel);
 	glPopMatrix();
 
