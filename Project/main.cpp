@@ -620,6 +620,11 @@ void drawTruck() {
 	glPopMatrix();
 }
 
+void drawContainer() {
+	int tx_Container[] = { TX_CONT_SIDE, TX_CONT_SIDE, TX_CONT_FRONT, TX_CONT_BACK, TX_CONT_SIDE, TX_CONT_SIDE };
+	drawCube(-0.045, 0.23, 0.9, 0.85, 0.82, 2.0, tx_Container);
+}
+
 void display() {
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 	glPushMatrix();
