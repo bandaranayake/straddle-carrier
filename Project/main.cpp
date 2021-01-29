@@ -5,9 +5,13 @@
 #include <GL/glut.h>
 
 #define PI 3.1415927
-#define TEXTURE_COUNT 13
+#define TEXTURE_COUNT 14
 #define SPREADER_LOWER_LIMIT 0.0
 #define SPREADER_UPPER_LIMIT 0.5
+
+#define C_NONE 0
+#define STRADLE_CARRIER 1
+#define CONTAINER_TRUCK 2
 
 #define TX_METAL_RED 0
 #define TX_METAL_GRAY 1
@@ -22,6 +26,7 @@
 #define TX_CONT_FRONT 10
 #define TX_CONT_BACK 11
 #define TX_CONT_SIDE 12
+#define TX_FLOOR 13
 
 using namespace std;
 
@@ -44,11 +49,21 @@ GLfloat camY = 0.0f;
 GLfloat camX = 0.0f;
 GLfloat camZ = 0.0f;
 
+GLfloat scX = 0.0f;
+GLfloat scZ = 0.0f;
+GLfloat ctX = 0.0f;
+GLfloat ctZ = 0.0f;
+GLfloat cnX = 5.0f;
+GLfloat cnY = 0.0f;
+GLfloat cnZ = 0.0f;
+
 GLfloat spHeight = 0.0;
+int attachedTo = C_NONE;
+int onUse = STRADLE_CARRIER;
 
 bool showWireframe = false;
-bool showAxes = true;
-bool showGrid = true;
+bool showAxes = false;
+bool showGrid = false;
 
 static unsigned int texture[TEXTURE_COUNT];
 
@@ -123,6 +138,7 @@ void loadExternalTextures()
 	image[TX_CONT_FRONT] = getbmp("textures/container_front.bmp");
 	image[TX_CONT_BACK] = getbmp("textures/container_back.bmp");
 	image[TX_CONT_SIDE] = getbmp("textures/container_side.bmp");
+	image[TX_FLOOR] = getbmp("textures/floor.bmp");
 
 	for (int i = 0; i < TEXTURE_COUNT; i++) {
 		glBindTexture(GL_TEXTURE_2D, texture[i]);
@@ -382,6 +398,11 @@ void drawCabin() {
 	glDisable(GL_TEXTURE_2D);
 }
 
+void drawContainer(GLfloat width, GLfloat height, GLfloat length) {
+	int tx_Container[] = { TX_CONT_SIDE, TX_CONT_SIDE, TX_CONT_FRONT, TX_CONT_BACK, TX_CONT_SIDE, TX_CONT_SIDE };
+	drawCube(0.0, 0.065, 0.0, width, height, length, tx_Container);
+}
+
 void drawStraddleCarrier(GLfloat spreaderHeight) {
 	int tx_Body[] = { TX_METAL_RED, TX_METAL_RED, TX_METAL_RED, TX_METAL_RED, TX_METAL_RED, TX_METAL_RED };
 	int tx_Wheel[] = { TX_TYRE, TX_WHEEL2, TX_WHEEL2 };
@@ -440,6 +461,14 @@ void drawStraddleCarrier(GLfloat spreaderHeight) {
 	// SPREADER
 	drawCube(0.11, 0.635 - spreaderHeight, 0.11, 0.14, 0.02, 0.3, tx_Body);
 
+	// CONTAINER
+	if (attachedTo == STRADLE_CARRIER) {
+		glPushMatrix();
+		glTranslatef(0.095, 0.406 - spreaderHeight, 0.06);
+		drawContainer(0.17, 0.164, 0.4);
+		glPopMatrix();
+	}
+
 	// SPREADER - CHAINS
 	glPushMatrix();
 	glTranslatef(0.12, 0.637 - spreaderHeight, 0.12);
@@ -476,6 +505,14 @@ void drawTruck() {
 	glTranslatef(0.0, 0.18, 0.0);
 	// TRAILER - BASE
 	drawCube(0.05, 0.18, 0.9, 0.65, 0.05, 2.1, tx_Body);
+
+	// CONTAINER
+	if (attachedTo == CONTAINER_TRUCK) {
+		glPushMatrix();
+		glTranslatef(-0.05, 0.18, 0.95);
+		drawContainer(0.85, 0.82, 2.0);
+		glPopMatrix();
+	}
 
 	// TRAILER - WHEELS BACK (SIDE 1)
 	glPushMatrix();
@@ -620,11 +657,6 @@ void drawTruck() {
 	glPopMatrix();
 }
 
-void drawContainer() {
-	int tx_Container[] = { TX_CONT_SIDE, TX_CONT_SIDE, TX_CONT_FRONT, TX_CONT_BACK, TX_CONT_SIDE, TX_CONT_SIDE };
-	drawCube(-0.045, 0.23, 0.9, 0.85, 0.82, 2.0, tx_Container);
-}
-
 void display() {
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 	glPushMatrix();
@@ -636,6 +668,18 @@ void display() {
 	glRotatef(rotY, 0.0f, 1.0f, 0.0f);
 	glRotatef(rotZ, 0.0f, 0.0f, 1.0f);
 
+	glEnable(GL_TEXTURE_2D);
+	glBindTexture(GL_TEXTURE_2D, texture[TX_FLOOR]);
+
+	glBegin(GL_QUADS);
+	glTexCoord2f(0.0, 0.0); glVertex3f(-100.0, 0.0, -100.0);
+	glTexCoord2f(10.0, 0.0); glVertex3f(-100.0, 0.0, 100.0);
+	glTexCoord2f(10.0, 10.0); glVertex3f(100.0, 0.0, 100.0);
+	glTexCoord2f(0.0, 10.0); glVertex3f(100.0, 0.0, -100.0);
+	glEnd();
+
+	glDisable(GL_TEXTURE_2D);
+
 	if (showAxes) {
 		drawAxes();
 	}
@@ -644,24 +688,80 @@ void display() {
 		drawGrid();
 	}
 
+	if (attachedTo == C_NONE) {
+		glPushMatrix();
+		glTranslatef(cnX, cnY, cnZ);
+		drawContainer(0.85, 0.82, 2.0);
+		glPopMatrix();
+	}
+	else if (attachedTo == STRADLE_CARRIER) {
+		cnX = scX + (0.095 * 5);
+		cnZ = scZ + (0.06 * 5);
+	}
+
+	glPushMatrix();
+	glTranslatef(ctX, 0.0, ctZ);
+	drawTruck();
+	glPopMatrix();
+
+	glPushMatrix();
+	glTranslatef(scX, 0.0, scZ);
+	glScalef(5.0, 5.0, 5.0);
+	drawStraddleCarrier(spHeight);
+	glPopMatrix();
+
 	glPopMatrix();
 	glutSwapBuffers();
 }
 
 void keyboardSpecial(int key, int x, int y) {
-	if (key == GLUT_KEY_UP) {
-		moveZ += 1;
+	if (key == GLUT_KEY_F1) {
+		showAxes = !showAxes;
 	}
-	else if (key == GLUT_KEY_DOWN) {
-		moveZ -= 1;
+	else if (key == GLUT_KEY_F2) {
+		showGrid = !showGrid;
 	}
-	else if (key == GLUT_KEY_LEFT) {
-		moveX += 1;
+	else if (key == GLUT_KEY_F3) {
+		if (showWireframe)
+			glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+		else
+			glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+		showWireframe = !showWireframe;
 	}
-	else if (key == GLUT_KEY_RIGHT) {
-		moveX -= 1;
+	else if (onUse == STRADLE_CARRIER) {
+		if (key == GLUT_KEY_UP) {
+			scZ += 0.1;
+		}
+		else if (key == GLUT_KEY_DOWN) {
+			scZ -= 0.1;
+		}
+		else if (key == GLUT_KEY_LEFT) {
+			scX += 0.1;
+		}
+		else if (key == GLUT_KEY_RIGHT) {
+			scX -= 0.1;
+		}
+		else if (key == GLUT_KEY_PAGE_DOWN) {
+			if (SPREADER_UPPER_LIMIT > spHeight) spHeight += 0.01;
+		}
+		else if (key == GLUT_KEY_PAGE_UP) {
+			if (SPREADER_LOWER_LIMIT < spHeight) spHeight -= 0.01;
+		}
 	}
-
+	else if (onUse == CONTAINER_TRUCK) {
+		if (key == GLUT_KEY_UP) {
+			ctZ += 0.2;
+		}
+		else if (key == GLUT_KEY_DOWN) {
+			ctZ -= 0.2;
+		}
+		else if (key == GLUT_KEY_LEFT) {
+			ctX += 0.2;
+		}
+		else if (key == GLUT_KEY_RIGHT) {
+			ctX -= 0.2;
+		}
+	}
 	glutPostRedisplay();
 }
 
@@ -670,7 +770,9 @@ void keyboard(unsigned char key, int x, int y) {
 		camY += 0.5;
 	}
 	else if (key == 's') {
-		camY -= 0.5;
+		if (camY >= 0.5) {
+			camY -= 0.5;
+		}
 	}
 	else if (key == 'a') {
 		rotY += 5.0;
@@ -678,40 +780,59 @@ void keyboard(unsigned char key, int x, int y) {
 	else if (key == 'd') {
 		rotY -= 5.0;
 	}
-	else if (key == '2') {
-		moveY += 1;
-	}
 	else if (key == '8') {
-		moveY -= 1;
+		moveZ += 1;
 	}
-	else if (key == 'c') {
-		if (showWireframe)
-			glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
-		else
-			glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
-		showWireframe = !showWireframe;
+	else if (key == '5') {
+		moveZ -= 1;
 	}
-	else if (key == 'x') {
-		showAxes = !showAxes;
+	else if (key == '4') {
+		moveX += 1;
 	}
-	else if (key == 'g') {
-		showGrid = !showGrid;
+	else if (key == '6') {
+		moveX -= 1;
 	}
-	else if (key == 'r') {
-		camY = -10;
-		rotY = 145;
-		moveY = 0;
-		moveX = 7;
-		moveZ = 10;
+	else if (key == '1') {
+		onUse = STRADLE_CARRIER;
 	}
-	else if (key == 'p') {
-		cout << camY << "|" << rotY << "|" << moveY << "|" << moveX << "|" << moveZ;
+	else if (key == '2') {
+		onUse = CONTAINER_TRUCK;
 	}
+	else if (onUse == STRADLE_CARRIER && key == ' ') {
+		if (attachedTo == STRADLE_CARRIER) {
+			GLfloat diffX = ctX - scX;
+			GLfloat diffZ = ctZ - scZ;
+
+			if ((diffX > 0.2 && diffX < 0.8) && (diffZ > -0.8 && diffZ < -0.2)) {
+				attachedTo = CONTAINER_TRUCK;
+			}
+			else {
+				attachedTo = C_NONE;
+				cnY = 0;
+			}
+		}
+		else {
+			GLfloat diffX = cnX - scX;
+			GLfloat diffZ = cnZ - scZ;
+
+			if (attachedTo == C_NONE) {
+				if ((diffX > 0.31 && diffX < 0.7) && (diffZ > -0.1 && diffZ < 0.7) && spHeight >= 0.5) {
+					attachedTo = STRADLE_CARRIER;
+				}
+			}
+			else if (attachedTo == CONTAINER_TRUCK) {
+				if ((diffX > 0.2 && diffX < 0.7) && (diffZ > -0.1 && diffZ < 0.7) && spHeight >= 0.41) {
+					attachedTo = STRADLE_CARRIER;
+				}
+			}
+		}
+	}
+
 	glutPostRedisplay();
 }
 
 void init() {
-	glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+	glClearColor(0.53, 0.81, 0.92, 1.0);
 	glGenTextures(TEXTURE_COUNT, texture);
 	loadExternalTextures();
 
