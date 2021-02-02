@@ -5,7 +5,7 @@
 #include <GL/glut.h>
 
 #define PI 3.1415927
-#define TEXTURE_COUNT 14
+#define TEXTURE_COUNT 16
 #define SPREADER_LOWER_LIMIT 0.0
 #define SPREADER_UPPER_LIMIT 0.5
 
@@ -27,6 +27,8 @@
 #define TX_CONT_BACK 11
 #define TX_CONT_SIDE 12
 #define TX_FLOOR 13
+#define TX_WATER 14
+#define TX_SKY 15
 
 using namespace std;
 
@@ -139,6 +141,8 @@ void loadExternalTextures()
 	image[TX_CONT_BACK] = getbmp("textures/container_back.bmp");
 	image[TX_CONT_SIDE] = getbmp("textures/container_side.bmp");
 	image[TX_FLOOR] = getbmp("textures/floor.bmp");
+	image[TX_WATER] = getbmp("textures/water.bmp");
+	image[TX_SKY] = getbmp("textures/sky.bmp");
 
 	for (int i = 0; i < TEXTURE_COUNT; i++) {
 		glBindTexture(GL_TEXTURE_2D, texture[i]);
@@ -305,6 +309,30 @@ void drawCylinder(GLfloat radius, GLfloat height, int tx[]) {
 	glVertex3f(height, 0.0, radius);
 	glEnd();
 
+	glDisable(GL_TEXTURE_2D);
+}
+
+void drawBackground(GLfloat radius, GLfloat height, int TX) {
+	GLfloat y = 0.0, z = 0.0;
+	GLfloat angle_stepsize = 0.1;
+
+	glEnable(GL_TEXTURE_2D);
+	glBindTexture(GL_TEXTURE_2D, texture[TX]);
+	glBegin(GL_QUAD_STRIP);
+	for (GLfloat i = 2 * PI; i >= 0; i -= 0.1)
+	{
+		const float tc = (i / (float)(2 * PI));
+		glTexCoord2f(tc, 0.0);
+		glVertex3f(radius * cos(i), 0, radius * sin(i));
+		glTexCoord2f(tc, 1.0);
+		glVertex3f(radius * cos(i), height, radius * sin(i));
+	}
+
+	glTexCoord2f(0.0, 0.0);
+	glVertex3f(radius, 0, 0);
+	glTexCoord2f(0.0, 1.0);
+	glVertex3f(radius, height, 0);
+	glEnd();
 	glDisable(GL_TEXTURE_2D);
 }
 
@@ -657,6 +685,36 @@ void drawTruck() {
 	glPopMatrix();
 }
 
+void drawEnv() {
+	glEnable(GL_TEXTURE_2D);
+	glBindTexture(GL_TEXTURE_2D, texture[TX_FLOOR]);
+	glBegin(GL_QUADS);
+	glTexCoord2f(0.0, 0.0); glVertex3f(-30.0, 0.0, -30.0);
+	glTexCoord2f(10.0, 0.0); glVertex3f(-30.0, 0.0, 60.0);
+	glTexCoord2f(10.0, 10.0); glVertex3f(60.0, 0.0, 60.0);
+	glTexCoord2f(0.0, 10.0); glVertex3f(60.0, 0.0, -30.0);
+	glEnd();
+
+	glBindTexture(GL_TEXTURE_2D, texture[TX_WATER]);
+	glBegin(GL_QUADS);
+	glTexCoord2f(0.0, 0.0); glVertex3f(-30.0, 0.0, -30.0);
+	glTexCoord2f(1.0, 0.0); glVertex3f(-60.0, 0.0, -30.0);
+	glTexCoord2f(1.0, 1.0); glVertex3f(-60.0, 0.0, 60.0);
+	glTexCoord2f(0.0, 1.0); glVertex3f(-30.0, 0.0, 60.0);
+
+	glTexCoord2f(1.0, 0.0); glVertex3f(-60.0, 0.0, -30.0);
+	glTexCoord2f(0.0, 1.0); glVertex3f(60.0, 0.0, -30.0);
+	glTexCoord2f(1.0, 1.0); glVertex3f(60.0, 0.0, -60.0);
+	glTexCoord2f(0.0, 0.0); glVertex3f(-60.0, 0.0, -60.0);
+	glEnd();
+	glDisable(GL_TEXTURE_2D);
+
+	glPushMatrix();
+	glRotatef(-120, 0, 1, 0);
+	drawBackground(60.0, 15.0, TX_SKY);
+	glPopMatrix();
+}
+
 void display() {
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 	glPushMatrix();
@@ -668,17 +726,7 @@ void display() {
 	glRotatef(rotY, 0.0f, 1.0f, 0.0f);
 	glRotatef(rotZ, 0.0f, 0.0f, 1.0f);
 
-	glEnable(GL_TEXTURE_2D);
-	glBindTexture(GL_TEXTURE_2D, texture[TX_FLOOR]);
-
-	glBegin(GL_QUADS);
-	glTexCoord2f(0.0, 0.0); glVertex3f(-100.0, 0.0, -100.0);
-	glTexCoord2f(10.0, 0.0); glVertex3f(-100.0, 0.0, 100.0);
-	glTexCoord2f(10.0, 10.0); glVertex3f(100.0, 0.0, 100.0);
-	glTexCoord2f(0.0, 10.0); glVertex3f(100.0, 0.0, -100.0);
-	glEnd();
-
-	glDisable(GL_TEXTURE_2D);
+	drawEnv();
 
 	if (showAxes) {
 		drawAxes();
@@ -775,10 +823,10 @@ void keyboard(unsigned char key, int x, int y) {
 		}
 	}
 	else if (key == 'a') {
-		rotY += 5.0;
+		rotY += 3.0;
 	}
 	else if (key == 'd') {
-		rotY -= 5.0;
+		rotY -= 3.0;
 	}
 	else if (key == '8') {
 		moveZ += 1;
@@ -832,7 +880,7 @@ void keyboard(unsigned char key, int x, int y) {
 }
 
 void init() {
-	glClearColor(0.53, 0.81, 0.92, 1.0);
+	glClearColor(0.0, 0.364, 0.741, 1.0);
 	glGenTextures(TEXTURE_COUNT, texture);
 	loadExternalTextures();
 
