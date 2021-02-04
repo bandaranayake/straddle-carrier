@@ -1,11 +1,13 @@
-#include <math.h>
+#include <stdlib.h>
 #include <iostream>
 #include <fstream>
 #include <string>
+#include <math.h>
+#include <time.h> 
 #include <GL/glut.h>
 
 #define PI 3.1415927
-#define TEXTURE_COUNT 16
+#define TEXTURE_COUNT 18
 #define SPREADER_LOWER_LIMIT 0.0
 #define SPREADER_UPPER_LIMIT 0.5
 
@@ -29,6 +31,8 @@
 #define TX_FLOOR 13
 #define TX_WATER 14
 #define TX_SKY 15
+#define TX_CONT_STACKF 16
+#define TX_CONT_STACKB 17
 
 using namespace std;
 
@@ -60,8 +64,14 @@ GLfloat cnY = 0.0f;
 GLfloat cnZ = 0.0f;
 
 GLfloat spHeight = 0.0;
+
 int attachedTo = C_NONE;
 int onUse = STRADLE_CARRIER;
+
+int tx_stack1[] = { TX_CONT_STACKF, TX_CONT_STACKF, TX_CONT_STACKF, TX_CONT_STACKB, TX_CONT_STACKB, TX_CONT_STACKF };
+int tx_stack2[] = { TX_CONT_STACKB, TX_CONT_STACKB, TX_CONT_STACKB, TX_CONT_STACKF, TX_CONT_STACKF, TX_CONT_STACKB };
+int tx_stackTop[3][10];
+int tx_stackBottom[3][10];
 
 bool showWireframe = false;
 bool showAxes = false;
@@ -143,6 +153,8 @@ void loadExternalTextures()
 	image[TX_FLOOR] = getbmp("textures/floor.bmp");
 	image[TX_WATER] = getbmp("textures/water.bmp");
 	image[TX_SKY] = getbmp("textures/sky.bmp");
+	image[TX_CONT_STACKF] = getbmp("textures/container_stack_f.bmp");
+	image[TX_CONT_STACKB] = getbmp("textures/container_stack_b.bmp");
 
 	for (int i = 0; i < TEXTURE_COUNT; i++) {
 		glBindTexture(GL_TEXTURE_2D, texture[i]);
@@ -758,6 +770,18 @@ void display() {
 	drawStraddleCarrier(spHeight);
 	glPopMatrix();
 
+	glPushMatrix();
+	glTranslatef(-25.0, 0.0, 0.0);
+
+	for (int j = 0; j < 3; j++) {
+		for (int i = 0; i < 10; i++) {
+			drawCube(i * 6.8, 0, 30 - (j * 16), 3.4, 2.46, 8, (tx_stackTop[j][i] == 0) ? tx_stack1 : tx_stack2);
+			drawCube(i * 6.8, 2.46, 30 - (j * 16), 3.4, 2.46, 8, (tx_stackBottom[j][i] == 0) ? tx_stack2 : tx_stack1);
+		}
+	}
+
+	glPopMatrix();
+
 	glPopMatrix();
 	glutSwapBuffers();
 }
@@ -904,6 +928,15 @@ void changeSize(GLsizei w, GLsizei h) {
 }
 
 int main(int argc, char** argv) {
+	srand(time(NULL));
+
+	for (int j = 0; j < 3; j++) {
+		for (int i = 0; i < 10; i++) {
+			tx_stackTop[j][i] = rand() % 2;
+			tx_stackBottom[j][i] = rand() % 2;
+		}
+	}
+
 	glutInit(&argc, argv);
 
 	glutInitDisplayMode(GLUT_DOUBLE | GLUT_DEPTH | GLUT_RGBA);
