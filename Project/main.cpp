@@ -725,6 +725,21 @@ void drawEnv() {
 	glRotatef(-120, 0, 1, 0);
 	drawBackground(60.0, 15.0, TX_SKY);
 	glPopMatrix();
+
+	glPushMatrix();
+	glTranslatef(-25.0, 0.0, 0.0);
+
+	for (int j = 0; j < 3; j++) {
+		for (int i = 0; i < 10; i++) {
+			drawCube(i * 6.8, 0, 30 - (j * 16), 3.4, 2.46, 8, (tx_stackBottom[j][i] == 0) ? tx_stack1 : tx_stack2);
+			if (tx_stackBottom[j][i] != 2) {
+				drawCube(i * 6.8, 2.46, 30 - (j * 16), 3.4, 2.46, 8, (tx_stackTop[j][i] == 0) ? tx_stack2 : tx_stack1);
+			}
+		}
+	}
+
+	glPopMatrix();
+
 }
 
 void display() {
@@ -768,18 +783,6 @@ void display() {
 	glTranslatef(scX, 0.0, scZ);
 	glScalef(5.0, 5.0, 5.0);
 	drawStraddleCarrier(spHeight);
-	glPopMatrix();
-
-	glPushMatrix();
-	glTranslatef(-25.0, 0.0, 0.0);
-
-	for (int j = 0; j < 3; j++) {
-		for (int i = 0; i < 10; i++) {
-			drawCube(i * 6.8, 0, 30 - (j * 16), 3.4, 2.46, 8, (tx_stackTop[j][i] == 0) ? tx_stack1 : tx_stack2);
-			drawCube(i * 6.8, 2.46, 30 - (j * 16), 3.4, 2.46, 8, (tx_stackBottom[j][i] == 0) ? tx_stack2 : tx_stack1);
-		}
-	}
-
 	glPopMatrix();
 
 	glPopMatrix();
@@ -932,8 +935,8 @@ int main(int argc, char** argv) {
 
 	for (int j = 0; j < 3; j++) {
 		for (int i = 0; i < 10; i++) {
+			tx_stackBottom[j][i] = rand() % 3;
 			tx_stackTop[j][i] = rand() % 2;
-			tx_stackBottom[j][i] = rand() % 2;
 		}
 	}
 
