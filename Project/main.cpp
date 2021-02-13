@@ -83,7 +83,6 @@ bool showGrid = false;
 
 static unsigned int texture[TEXTURE_COUNT];
 
-GLUquadricObj* qobj;
 
 BitMapFile* getbmp(string filename)
 {
@@ -705,10 +704,20 @@ void drawEnv() {
 	glEnable(GL_TEXTURE_2D);
 	glBindTexture(GL_TEXTURE_2D, texture[TX_FLOOR]);
 	glBegin(GL_QUADS);
-	glTexCoord2f(0.0, 0.0); glVertex3f(-30.0, 0.0, -30.0);
-	glTexCoord2f(10.0, 0.0); glVertex3f(-30.0, 0.0, 60.0);
-	glTexCoord2f(10.0, 10.0); glVertex3f(60.0, 0.0, 60.0);
-	glTexCoord2f(0.0, 10.0); glVertex3f(60.0, 0.0, -30.0);
+
+	GLfloat tmpY = -30;
+	for (int i = 0; i < 9; i++) {
+		GLfloat tmpX = -30;
+
+		for (int j = 0; j < 9; j++) {
+			glTexCoord2f(0.0, 0.0); glVertex3f(tmpX, 0.0, tmpY);
+			glTexCoord2f(1.0, 0.0); glVertex3f(tmpX, 0.0, tmpY + 10);
+			glTexCoord2f(1.0, 1.0); glVertex3f(tmpX + 10, 0.0, tmpY + 10);
+			glTexCoord2f(0.0, 1.0); glVertex3f(tmpX + 10, 0.0, tmpY);
+			tmpX += 10;
+		}
+		tmpY += 10;
+	}
 	glEnd();
 
 	glBindTexture(GL_TEXTURE_2D, texture[TX_WATER]);
@@ -971,8 +980,6 @@ void init() {
 	glClearColor(0.0, 0.364, 0.741, 1.0);
 	glGenTextures(TEXTURE_COUNT, texture);
 	loadExternalTextures();
-
-	qobj = gluNewQuadric();
 
 	glEnable(GL_DEPTH_TEST);
 	glEnable(GL_CULL_FACE);
