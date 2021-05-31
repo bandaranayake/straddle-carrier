@@ -62,6 +62,7 @@ GLfloat spHeight = 0.0;
 
 int attachedTo = CNT_NONE;
 int active = STRADLE_CARRIER;
+int winId, winW, winH;
 
 bool showWireframe = false;
 bool showAxes = false;
@@ -840,23 +841,12 @@ void keyboardSpecial(int key, int x, int y) {
 }
 
 void keyboard(unsigned char key, int x, int y) {
-	if (key == 'w') {
-		rotX += 0.1;
-	}
-	else if (key == 's') {
-		if (rotX > 0) {
-			rotX -= 0.1;
-		}
-	}
-	else if (key == 'd') {
-		rotY += 0.1;
-	}
-	else if (key == 'a') {
-		rotY -= 0.1;
+	if (key == 27) {
+		glutDestroyWindow(winId);
+		exit(0);
 	}
 	else if (key == '0') {
 		active = NONE;
-
 	}
 	else if (key == '1') {
 		active = STRADLE_CARRIER;
@@ -901,6 +891,22 @@ void keyboard(unsigned char key, int x, int y) {
 	glutPostRedisplay();
 }
 
+void mouse(int x, int y) {
+	int midX = winW / 2;
+	int midY = winH / 2;
+
+	if (x != midX || y != midY) {
+		glutWarpPointer(midX, midY);
+
+		rotY += (GLfloat)((midX - x)) / 1000;
+		rotX += (GLfloat)((midY - y)) / 500;
+
+		if (rotX < 0.0) rotX = 0.0;
+		if (rotX > 3.0) rotX = 3.0;
+		glutPostRedisplay();
+	}
+}
+
 void timer(int x) {
 	glutPostRedisplay();
 	glutTimerFunc(60, timer, 1);
@@ -918,6 +924,9 @@ void init() {
 }
 
 void changeSize(GLsizei w, GLsizei h) {
+	winW = w;
+	winH = h;
+
 	glViewport(0, 0, w, h);
 	GLfloat aspect_ratio = h == 0 ? w / 1 : (GLfloat)w / (GLfloat)h;
 
@@ -938,13 +947,15 @@ int main(int argc, char** argv) {
 	glutInitWindowSize(500, 500);
 	glutInitWindowPosition(150, 150);
 
-	glutCreateWindow("Straddle Carrier");
+	winId = glutCreateWindow("Straddle Carrier");
 
 	glutDisplayFunc(display);
 	glutReshapeFunc(changeSize);
 
 	glutKeyboardFunc(keyboard);
 	glutSpecialFunc(keyboardSpecial);
+	glutPassiveMotionFunc(mouse);
+	glutSetCursor(GLUT_CURSOR_NONE);
 
 	glutTimerFunc(60.0, timer, 1);
 	init();
