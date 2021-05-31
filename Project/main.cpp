@@ -11,7 +11,11 @@
 #define SPREADER_LOWER_LIMIT 0.0
 #define SPREADER_UPPER_LIMIT 0.5
 
-#define C_NONE 0
+#define CNT_NONE 0
+#define CNT_SC 1
+#define CNT_CT 2
+
+#define NONE 0
 #define STRADLE_CARRIER 1
 #define CONTAINER_TRUCK 2
 
@@ -34,6 +38,7 @@
 #define TX_CONT_STACKF 16
 #define TX_CONT_STACKB 17
 
+#define CAMERA_RAD 3.5
 using namespace std;
 
 struct BitMapFile
@@ -43,46 +48,26 @@ struct BitMapFile
 	unsigned char* data;
 };
 
-GLfloat moveX = 2.0f;
-GLfloat moveY = 0.0f;
-GLfloat moveZ = -14.0f;
-
 GLfloat rotX = 0.0f;
-GLfloat rotY = 54.0f;
-GLfloat rotZ = 0.0f;
+GLfloat rotY = 3.1f;
 
-GLfloat camY = 5.5f;
-GLfloat camX = 0.0f;
-GLfloat camZ = 0.0f;
+GLfloat posCam[3];
+GLfloat posCenter[3];
 
-GLfloat scX = -9.0f;
-GLfloat scZ = -10.0f;
-GLfloat ctX = -12.0f;
-GLfloat ctZ = -9.0f;
-GLfloat cnX = -9.0f;
-GLfloat cnY = 0.0f;
-GLfloat cnZ = 3.0f;
+GLfloat posSc[] = { -9.0f, 0.0f, -10.0f };
+GLfloat posCt[] = { -12.0f, 0.0f, -9.0f };
+GLfloat posCn[] = { -9.0f, 0.0f, 3.0f };
 
 GLfloat spHeight = 0.0;
 
-int attachedTo = C_NONE;
-int onUse = STRADLE_CARRIER;
-
-int tx_stack1[] = { TX_CONT_STACKF, TX_CONT_STACKF, TX_CONT_STACKF, TX_CONT_STACKB, TX_CONT_STACKB, TX_CONT_STACKF };
-int tx_stack2[] = { TX_CONT_STACKB, TX_CONT_STACKB, TX_CONT_STACKB, TX_CONT_STACKF, TX_CONT_STACKF, TX_CONT_STACKB };
-int tx_stackTop[4][10];
-int tx_stackBottom[4][10];
-
-int vehicleType[5];
-bool vehicleTurn[5];
-GLfloat vehicleZ[5];
+int attachedTo = CNT_NONE;
+int active = STRADLE_CARRIER;
 
 bool showWireframe = false;
 bool showAxes = false;
 bool showGrid = false;
 
 static unsigned int texture[TEXTURE_COUNT];
-
 
 BitMapFile* getbmp(string filename)
 {
@@ -324,30 +309,6 @@ void drawCylinder(GLfloat radius, GLfloat height, int tx[]) {
 	glVertex3f(height, 0.0, radius);
 	glEnd();
 
-	glDisable(GL_TEXTURE_2D);
-}
-
-void drawBackground(GLfloat radius, GLfloat height, int TX) {
-	GLfloat y = 0.0, z = 0.0;
-	GLfloat angle_stepsize = 0.1;
-
-	glEnable(GL_TEXTURE_2D);
-	glBindTexture(GL_TEXTURE_2D, texture[TX]);
-	glBegin(GL_QUAD_STRIP);
-	for (GLfloat i = 2 * PI; i >= 0; i -= 0.1)
-	{
-		const float tc = (i / (float)(2 * PI));
-		glTexCoord2f(tc, 0.0);
-		glVertex3f(radius * cos(i), 0, radius * sin(i));
-		glTexCoord2f(tc, 1.0);
-		glVertex3f(radius * cos(i), height, radius * sin(i));
-	}
-
-	glTexCoord2f(0.0, 0.0);
-	glVertex3f(radius, 0, 0);
-	glTexCoord2f(0.0, 1.0);
-	glVertex3f(radius, height, 0);
-	glEnd();
 	glDisable(GL_TEXTURE_2D);
 }
 
@@ -733,103 +694,79 @@ void drawEnv() {
 	glTexCoord2f(0.0, 0.0); glVertex3f(-60.0, 0.0, -60.0);
 	glEnd();
 	glDisable(GL_TEXTURE_2D);
-
-	glPushMatrix();
-	glRotatef(-120, 0, 1, 0);
-	drawBackground(60.0, 15.0, TX_SKY);
-	glPopMatrix();
-
-	glPushMatrix();
-	glTranslatef(-25.0, 0.0, 0.0);
-
-	for (int j = 0; j < 4; j++) {
-		for (int i = 0; i < 10; i++) {
-			drawCube(i * 6.8, 0, 30 - (j * 16), 3.4, 2.46, 8, (tx_stackBottom[j][i] == 0) ? tx_stack1 : tx_stack2);
-			if (tx_stackBottom[j][i] != 2) {
-				drawCube(i * 6.8, 2.46, 30 - (j * 16), 3.4, 2.46, 8, (tx_stackTop[j][i] == 0) ? tx_stack2 : tx_stack1);
-			}
-		}
-	}
-
-	glPopMatrix();
 }
 
 void display() {
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 	glPushMatrix();
 
-	gluLookAt(0.0 + camX, 2.0 + camY, 5.0 + camZ, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0);
+	// Camera
+	if (active == STRADLE_CARRIER) {
+		posCenter[0] = posSc[0] + 0.9;
+		posCenter[1] = 1.0;
+		posCenter[2] = posSc[2] + 1.6;
+	}
+	else if (active == CONTAINER_TRUCK) {
+		posCenter[0] = posCt[0] + 0.375;
+		posCenter[1] = 1.0;
+		posCenter[2] = posCt[2] + 2.3;
+	}
 
-	glTranslatef(moveX, moveY, moveZ);
-	glRotatef(rotX, 1.0f, 0.0f, 0.0f);
-	glRotatef(rotY, 0.0f, 1.0f, 0.0f);
-	glRotatef(rotZ, 0.0f, 0.0f, 1.0f);
+	if (active == NONE) {
+		gluLookAt(0.0, 2.0 + (rotX * 5), 5.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0);
 
+		glTranslatef(posCam[0], 0.0, posCam[2]);
+		glRotatef(rotY * 30, 0.0f, 1.0f, 0.0f);
+	}
+	else {
+		GLfloat camX = posCenter[0] + (CAMERA_RAD * sin(rotY));
+		GLfloat camY = 2.0 + rotX;
+		GLfloat camZ = posCenter[2] + (CAMERA_RAD * cos(rotY));
+
+		gluLookAt(camX, camY, camZ, posCenter[0], posCenter[1], posCenter[2], 0.0, 1.0, 0.0);
+	}
+
+	// Draw environment
 	drawEnv();
 
+	// Draw axes
 	if (showAxes) {
 		drawAxes();
 	}
 
+	// Draw grid
 	if (showGrid) {
 		drawGrid();
 	}
 
 	glPushMatrix();
-	glRotatef(90.0, 0, 1, 0);
 
-	if (attachedTo == C_NONE) {
+	// Draw Container
+	if (attachedTo == CNT_NONE) {
 		glPushMatrix();
-		glTranslatef(cnX, cnY, cnZ);
+		glTranslatef(posCn[0], posCn[1], posCn[2]);
 		drawContainer(0.85, 0.82, 2.0);
 		glPopMatrix();
 	}
-	else if (attachedTo == STRADLE_CARRIER) {
-		cnX = scX + (0.095 * 5);
-		cnZ = scZ + (0.06 * 5);
+	else if (attachedTo == CNT_SC) {
+		posCn[0] = posSc[0] + (0.095 * 5);
+		posCn[2] = posSc[2] + (0.06 * 5);
 	}
 
+	// Draw Truck
 	glPushMatrix();
-	glTranslatef(ctX, 0.0, ctZ);
-	drawTruck(attachedTo == CONTAINER_TRUCK);
+	glTranslatef(posCt[0], 0.0, posCt[2]);
+	drawTruck(attachedTo == CNT_CT);
 	glPopMatrix();
 
+	// Draw Straddle Carrier
 	glPushMatrix();
-	glTranslatef(scX, 0.0, scZ);
+	glTranslatef(posSc[0], 0.0, posSc[2]);
 	glScalef(5.0, 5.0, 5.0);
-	drawStraddleCarrier(spHeight, attachedTo == STRADLE_CARRIER);
+	drawStraddleCarrier(spHeight, attachedTo == CNT_SC);
 	glPopMatrix();
 
 	glPopMatrix();
-
-	for (int i = 0; i < 5; i++) {
-		glPushMatrix();
-
-		if (vehicleTurn[i]) {
-			glTranslatef(0.8 + (i * 6.8), 0.0, vehicleZ[i]);
-			glRotatef(180.0, 0, 1, 0);
-		}
-		else {
-			glTranslatef(i * 6.8, 0.0, vehicleZ[i]);
-		}
-
-		if (vehicleType[i] == 0) {
-			drawTruck(true);
-		}
-		else if (vehicleType[i] == 1) {
-			drawTruck(false);
-		}
-		else if (vehicleType[i] == 2) {
-			glScalef(5.0, 5.0, 5.0);
-			drawStraddleCarrier(0.0, true);
-		}
-		else {
-			glScalef(5.0, 5.0, 5.0);
-			drawStraddleCarrier(0.0, false);
-		}
-
-		glPopMatrix();
-	}
 
 	glPopMatrix();
 	glutSwapBuffers();
@@ -843,24 +780,40 @@ void keyboardSpecial(int key, int x, int y) {
 		showGrid = !showGrid;
 	}
 	else if (key == GLUT_KEY_F3) {
-		if (showWireframe)
+		if (showWireframe) {
 			glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
-		else
+		}
+		else {
 			glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+		}
 		showWireframe = !showWireframe;
 	}
-	else if (onUse == STRADLE_CARRIER) {
+	else if (active == NONE) {
 		if (key == GLUT_KEY_UP) {
-			scZ += 0.1;
+			posCam[2] += 1.0;
 		}
 		else if (key == GLUT_KEY_DOWN) {
-			scZ -= 0.1;
+			posCam[2] -= 1.0;
 		}
 		else if (key == GLUT_KEY_LEFT) {
-			scX += 0.1;
+			posCam[0] += 1.0;
 		}
 		else if (key == GLUT_KEY_RIGHT) {
-			scX -= 0.1;
+			posCam[0] -= 1.0;
+		}
+	}
+	else if (active == STRADLE_CARRIER) {
+		if (key == GLUT_KEY_UP) {
+			posSc[2] += 0.1;
+		}
+		else if (key == GLUT_KEY_DOWN) {
+			posSc[2] -= 0.1;
+		}
+		else if (key == GLUT_KEY_LEFT) {
+			posSc[0] += 0.1;
+		}
+		else if (key == GLUT_KEY_RIGHT) {
+			posSc[0] -= 0.1;
 		}
 		else if (key == GLUT_KEY_PAGE_DOWN) {
 			if (SPREADER_UPPER_LIMIT > spHeight) spHeight += 0.01;
@@ -869,18 +822,18 @@ void keyboardSpecial(int key, int x, int y) {
 			if (SPREADER_LOWER_LIMIT < spHeight) spHeight -= 0.01;
 		}
 	}
-	else if (onUse == CONTAINER_TRUCK) {
+	else if (active == CONTAINER_TRUCK) {
 		if (key == GLUT_KEY_UP) {
-			ctZ += 0.2;
+			posCt[2] += 0.2;
 		}
 		else if (key == GLUT_KEY_DOWN) {
-			ctZ -= 0.2;
+			posCt[2] -= 0.2;
 		}
 		else if (key == GLUT_KEY_LEFT) {
-			ctX += 0.2;
+			posCt[0] += 0.2;
 		}
 		else if (key == GLUT_KEY_RIGHT) {
-			ctX -= 0.2;
+			posCt[0] -= 0.2;
 		}
 	}
 	glutPostRedisplay();
@@ -888,62 +841,58 @@ void keyboardSpecial(int key, int x, int y) {
 
 void keyboard(unsigned char key, int x, int y) {
 	if (key == 'w') {
-		camY += 0.5;
+		rotX += 0.1;
 	}
 	else if (key == 's') {
-		if (camY >= 0.5) {
-			camY -= 0.5;
+		if (rotX > 0) {
+			rotX -= 0.1;
 		}
 	}
-	else if (key == 'a') {
-		rotY += 3.0;
-	}
 	else if (key == 'd') {
-		rotY -= 3.0;
+		rotY += 0.1;
 	}
-	else if (key == '8') {
-		moveZ += 1;
+	else if (key == 'a') {
+		rotY -= 0.1;
 	}
-	else if (key == '5') {
-		moveZ -= 1;
-	}
-	else if (key == '4') {
-		moveX += 1;
-	}
-	else if (key == '6') {
-		moveX -= 1;
+	else if (key == '0') {
+		active = NONE;
+
 	}
 	else if (key == '1') {
-		onUse = STRADLE_CARRIER;
+		active = STRADLE_CARRIER;
+		rotX = 0.0;
+		rotY = 3.1;
 	}
 	else if (key == '2') {
-		onUse = CONTAINER_TRUCK;
+		active = CONTAINER_TRUCK;
+		rotX = 0.0;
+		rotY = 3.1;
 	}
-	else if (onUse == STRADLE_CARRIER && key == ' ') {
-		if (attachedTo == STRADLE_CARRIER) {
-			GLfloat diffX = ctX - scX;
-			GLfloat diffZ = ctZ - scZ;
+	else if (active == STRADLE_CARRIER && key == ' ') {
+		if (attachedTo == CNT_SC) {
+			GLfloat diffX = posCt[0] - posSc[0];
+			GLfloat diffZ = posCt[2] - posSc[2];
 
 			if ((diffX > 0.2 && diffX < 0.8) && (diffZ > -0.8 && diffZ < -0.2)) {
-				attachedTo = CONTAINER_TRUCK;
+				attachedTo = CNT_CT;
 			}
 			else {
-				attachedTo = C_NONE;
-				cnY = 0;
+				attachedTo = CNT_NONE;
+				posCn[1] = 0;
 			}
 		}
 		else {
-			GLfloat diffX = cnX - scX;
-			GLfloat diffZ = cnZ - scZ;
+			GLfloat diffX = posCn[0] - posSc[0];
+			GLfloat diffZ = posCn[2] - posSc[2];
 
-			if (attachedTo == C_NONE) {
+			if (attachedTo == CNT_NONE) {
 				if ((diffX > 0.31 && diffX < 0.7) && (diffZ > -0.1 && diffZ < 0.7) && spHeight >= 0.5) {
-					attachedTo = STRADLE_CARRIER;
+					attachedTo = CNT_SC;
 				}
 			}
-			else if (attachedTo == CONTAINER_TRUCK) {
+			else if (attachedTo == CNT_CT) {
 				if ((diffX > 0.2 && diffX < 0.7) && (diffZ > -0.1 && diffZ < 0.7) && spHeight >= 0.41) {
-					attachedTo = STRADLE_CARRIER;
+					attachedTo = CNT_SC;
 				}
 			}
 		}
@@ -953,25 +902,6 @@ void keyboard(unsigned char key, int x, int y) {
 }
 
 void timer(int x) {
-	for (int i = 0; i < 5; i++) {
-		if (vehicleTurn[i]) {
-			vehicleZ[i] -= 0.2;
-
-			if (vehicleZ[i] < -20) {
-				vehicleType[i] = rand() % 4;
-				vehicleTurn[i] = false;
-			}
-		}
-		else {
-			vehicleZ[i] += 0.2;
-
-			if (vehicleZ[i] > 30) {
-				vehicleType[i] = rand() % 4;
-				vehicleTurn[i] = true;
-			}
-		}
-	}
-
 	glutPostRedisplay();
 	glutTimerFunc(60, timer, 1);
 }
@@ -1000,25 +930,6 @@ void changeSize(GLsizei w, GLsizei h) {
 
 int main(int argc, char** argv) {
 	srand(time(NULL));
-
-	for (int j = 0; j < 4; j++) {
-		for (int i = 0; i < 10; i++) {
-			tx_stackBottom[j][i] = rand() % 3;
-			tx_stackTop[j][i] = rand() % 2;
-		}
-	}
-
-	for (int i = 0; i < 5; i++) {
-		vehicleType[i] = rand() % 4;
-		vehicleTurn[i] = (rand() % 2 == 0);
-
-		if (vehicleTurn[i]) {
-			vehicleZ[i] = rand() % 30;
-		}
-		else {
-			vehicleZ[i] = -(rand() % 20);
-		}
-	}
 
 	glutInit(&argc, argv);
 
