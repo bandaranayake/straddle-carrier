@@ -7,7 +7,7 @@
 #include <GL/glut.h>
 
 #define PI 3.1415927
-#define TEXTURE_COUNT 18
+#define TEXTURE_COUNT 19
 #define SPREADER_LOWER_LIMIT 0.0
 #define SPREADER_UPPER_LIMIT 0.5
 
@@ -37,6 +37,7 @@
 #define TX_SKY 15
 #define TX_CONT_STACKF 16
 #define TX_CONT_STACKB 17
+#define TX_WALL 18
 
 #define CAMERA_RAD 3.5
 using namespace std;
@@ -144,6 +145,7 @@ void loadExternalTextures()
 	image[TX_SKY] = getbmp("textures/sky.bmp");
 	image[TX_CONT_STACKF] = getbmp("textures/container_stack_f.bmp");
 	image[TX_CONT_STACKB] = getbmp("textures/container_stack_b.bmp");
+	image[TX_WALL] = getbmp("textures/wall.bmp");
 
 	for (int i = 0; i < TEXTURE_COUNT; i++) {
 		glBindTexture(GL_TEXTURE_2D, texture[i]);
@@ -662,26 +664,66 @@ void drawTruck(bool attached) {
 	glPopMatrix();
 }
 
+void drawWall(GLfloat x, GLfloat y, GLfloat z, GLfloat w, GLfloat h, GLfloat l, int tx) {
+	glEnable(GL_TEXTURE_2D);
+	glBindTexture(GL_TEXTURE_2D, texture[tx]);
+	glBegin(GL_QUADS);
+
+	// TOP
+	glTexCoord2f(0.0, 0.0); glVertex3f(x, y + h, z);
+	glTexCoord2f(1.0, 0.0); glVertex3f(x, y + h, z + l);
+	glTexCoord2f(1.0, 1.0); glVertex3f(x + w, y + h, z + l);
+	glTexCoord2f(0.0, 1.0); glVertex3f(x + w, y + h, z);
+
+	// FRONT
+	glTexCoord2f(0.0, 0.0); glVertex3f(x, y, z + l);
+	glTexCoord2f(1.0, 0.0); glVertex3f(x + w, y, z + l);
+	glTexCoord2f(1.0, 1.0); glVertex3f(x + w, y + h, z + l);
+	glTexCoord2f(0.0, 1.0); glVertex3f(x, y + h, z + l);
+
+	// BACK
+	glTexCoord2f(0.0, 0.0); glVertex3f(x, y, z);
+	glTexCoord2f(0.0, 1.0); glVertex3f(x, y + h, z);
+	glTexCoord2f(1.0, 1.0); glVertex3f(x + w, y + h, z);
+	glTexCoord2f(1.0, 0.0); glVertex3f(x + w, y, z);
+
+	// LEFT
+	glTexCoord2f(0.0, 0.0); glVertex3f(x, y, z);
+	glTexCoord2f(1.0, 0.0); glVertex3f(x, y, z + l);
+	glTexCoord2f(1.0, 1.0); glVertex3f(x, y + h, z + l);
+	glTexCoord2f(0.0, 1.0); glVertex3f(x, y + h, z);
+
+	// RIGHT
+	glTexCoord2f(0.0, 0.0); glVertex3f(x + w, y, z);
+	glTexCoord2f(0.0, 1.0); glVertex3f(x + w, y + h, z);
+	glTexCoord2f(1.0, 1.0); glVertex3f(x + w, y + h, z + l);
+	glTexCoord2f(1.0, 0.0); glVertex3f(x + w, y, z + l);
+
+	glEnd();
+}
+
 void drawEnv() {
 	glEnable(GL_TEXTURE_2D);
 	glBindTexture(GL_TEXTURE_2D, texture[TX_FLOOR]);
 	glBegin(GL_QUADS);
 
-	GLfloat tmpY = -30;
+	// Floor
+	GLfloat tmpZ = -30;
+	GLfloat tmpX = -30;
 	for (int i = 0; i < 9; i++) {
-		GLfloat tmpX = -30;
-
 		for (int j = 0; j < 9; j++) {
-			glTexCoord2f(0.0, 0.0); glVertex3f(tmpX, 0.0, tmpY);
-			glTexCoord2f(1.0, 0.0); glVertex3f(tmpX, 0.0, tmpY + 10);
-			glTexCoord2f(1.0, 1.0); glVertex3f(tmpX + 10, 0.0, tmpY + 10);
-			glTexCoord2f(0.0, 1.0); glVertex3f(tmpX + 10, 0.0, tmpY);
+			glTexCoord2f(0.0, 0.0); glVertex3f(tmpX, 0.0, tmpZ);
+			glTexCoord2f(1.0, 0.0); glVertex3f(tmpX, 0.0, tmpZ + 10);
+			glTexCoord2f(1.0, 1.0); glVertex3f(tmpX + 10, 0.0, tmpZ + 10);
+			glTexCoord2f(0.0, 1.0); glVertex3f(tmpX + 10, 0.0, tmpZ);
 			tmpX += 10;
 		}
-		tmpY += 10;
+		tmpZ += 10;
+		tmpX = -30;
 	}
 	glEnd();
 
+	// Water
 	glBindTexture(GL_TEXTURE_2D, texture[TX_WATER]);
 	glBegin(GL_QUADS);
 	glTexCoord2f(0.0, 0.0); glVertex3f(-30.0, 0.0, -30.0);
@@ -695,6 +737,19 @@ void drawEnv() {
 	glTexCoord2f(0.0, 0.0); glVertex3f(-60.0, 0.0, -60.0);
 	glEnd();
 	glDisable(GL_TEXTURE_2D);
+
+	//Walls
+	tmpZ = -30;
+	for (int i = 0; i < 9; i++) {
+		drawWall(-30, 0.0, tmpZ, 0.5, 0.5, 10.0, TX_WALL);
+		tmpZ += 10;
+	}
+
+	tmpX = -30;
+	for (int i = 0; i < 9; i++) {
+		drawWall(tmpX, 0.0, -30, 10.0, 0.5, 0.5, TX_WALL);
+		tmpX += 10;
+	}
 }
 
 void display() {
@@ -948,6 +1003,7 @@ int main(int argc, char** argv) {
 	glutInitWindowPosition(150, 150);
 
 	winId = glutCreateWindow("Straddle Carrier");
+	glutFullScreen();
 
 	glutDisplayFunc(display);
 	glutReshapeFunc(changeSize);
