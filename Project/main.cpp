@@ -7,7 +7,7 @@
 #include <GL/glut.h>
 
 #define PI 3.1415927
-#define TEXTURE_COUNT 19
+#define TEXTURE_COUNT 24
 #define SPREADER_LOWER_LIMIT 0.0
 #define SPREADER_UPPER_LIMIT 0.5
 
@@ -32,12 +32,17 @@
 #define TX_CONT_FRONT 10
 #define TX_CONT_BACK 11
 #define TX_CONT_SIDE 12
-#define TX_FLOOR 13
+#define TX_FLOOR1 13
 #define TX_WATER 14
 #define TX_SKY 15
 #define TX_CONT_STACKF 16
 #define TX_CONT_STACKB 17
-#define TX_WALL 18
+#define TX_WALL1 18
+#define TX_WALL2 19
+#define TX_WALL3 20
+#define TX_ROOF 21
+#define TX_CEILING 22
+#define TX_FLOOR2 23
 
 #define CAMERA_RAD 3.5
 using namespace std;
@@ -140,12 +145,17 @@ void loadExternalTextures()
 	image[TX_CONT_FRONT] = getbmp("textures/container_front.bmp");
 	image[TX_CONT_BACK] = getbmp("textures/container_back.bmp");
 	image[TX_CONT_SIDE] = getbmp("textures/container_side.bmp");
-	image[TX_FLOOR] = getbmp("textures/floor.bmp");
+	image[TX_FLOOR1] = getbmp("textures/floor1.bmp");
+	image[TX_FLOOR2] = getbmp("textures/floor2.bmp");
 	image[TX_WATER] = getbmp("textures/water.bmp");
 	image[TX_SKY] = getbmp("textures/sky.bmp");
 	image[TX_CONT_STACKF] = getbmp("textures/container_stack_f.bmp");
 	image[TX_CONT_STACKB] = getbmp("textures/container_stack_b.bmp");
-	image[TX_WALL] = getbmp("textures/wall.bmp");
+	image[TX_WALL1] = getbmp("textures/wall1.bmp");
+	image[TX_WALL2] = getbmp("textures/wall2.bmp");
+	image[TX_WALL3] = getbmp("textures/wall3.bmp");
+	image[TX_ROOF] = getbmp("textures/roof.bmp");
+	image[TX_CEILING] = getbmp("textures/ceiling.bmp");
 
 	for (int i = 0; i < TEXTURE_COUNT; i++) {
 		glBindTexture(GL_TEXTURE_2D, texture[i]);
@@ -700,11 +710,104 @@ void drawWall(GLfloat x, GLfloat y, GLfloat z, GLfloat w, GLfloat h, GLfloat l, 
 	glTexCoord2f(1.0, 0.0); glVertex3f(x + w, y, z + l);
 
 	glEnd();
+	glDisable(GL_TEXTURE_2D);
+}
+
+void drawWarehouse(GLfloat x, GLfloat y, GLfloat z, GLfloat w, GLfloat h, GLfloat l) {
+	int tx_wallF[] = { TX_WALL3, TX_WALL3, TX_WALL2, TX_WALL3, TX_WALL3, TX_WALL3 };
+	int tx_wallB[] = { TX_WALL3, TX_WALL3, TX_WALL3, TX_WALL2, TX_WALL3, TX_WALL3 };
+	int tx_wallR[] = { TX_WALL3, TX_WALL3, TX_WALL3, TX_WALL3, TX_WALL2, TX_WALL3 };
+	int tx_wallL[] = { TX_WALL3, TX_WALL3, TX_WALL3, TX_WALL3, TX_WALL3, TX_WALL2 };
+
+	drawCube(x + 0.3, y, z + l - 0.3, w - 0.6, h, 0.3, tx_wallB); // Back Wall
+	drawCube(x, y, z, 0.3, h, l, tx_wallL); // Left Wall
+	drawCube(x + w - 0.3, y, z, 0.3, h, l, tx_wallR); // Right Wall
+
+	// Front Wall
+	GLfloat tw = (w - 0.6) / 15;
+	GLfloat th1 = h * 0.25;
+	GLfloat th2 = h * 0.75;
+
+	for (int i = 0; i < 15; i++) {
+		if (i % 2 == 0) {
+			drawCube(x + (i * tw) + 0.3, y, z, tw, h, 0.3, tx_wallF);
+		}
+		else {
+			drawCube(x + (i * tw) + 0.3, y + th2, z, tw, th1, 0.3, tx_wallF);
+		}
+	}
+
+	glEnable(GL_TEXTURE_2D);
+
+	// Left Top Wall
+	glBindTexture(GL_TEXTURE_2D, texture[TX_WALL2]);
+	glBegin(GL_TRIANGLES);
+	glTexCoord2f(0.0, 0.0); glVertex3f(x + 0.3, y + h, z);
+	glTexCoord2f(0.5, 0.0); glVertex3f(x + 0.3, y + h + 2.0, z + (l / 2));
+	glTexCoord2f(0.0, 1.0); glVertex3f(x + 0.3, y + h, z + l);
+
+	glTexCoord2f(0.0, 0.0); glVertex3f(x + w - 0.3, y + h, z + l);
+	glTexCoord2f(0.5, 0.0); glVertex3f(x + w - 0.3, y + h + 2.0, z + (l / 2));
+	glTexCoord2f(0.0, 1.0); glVertex3f(x + w - 0.3, y + h, z);
+	glEnd();
+
+	// Right Top Wall
+	glBindTexture(GL_TEXTURE_2D, texture[TX_WALL3]);
+	glBegin(GL_TRIANGLES);
+	glTexCoord2f(0.0, 0.0); glVertex3f(x + w, y + h, z);
+	glTexCoord2f(0.5, 0.0); glVertex3f(x + w, y + h + 2.0, z + (l / 2));
+	glTexCoord2f(0.0, 1.0); glVertex3f(x + w, y + h, z + l);
+
+	glTexCoord2f(0.0, 0.0); glVertex3f(x, y + h, z + l);
+	glTexCoord2f(0.5, 0.0); glVertex3f(x, y + h + 2.0, z + (l / 2));
+	glTexCoord2f(0.0, 1.0); glVertex3f(x, y + h, z);
+	glEnd();
+
+	glBindTexture(GL_TEXTURE_2D, texture[TX_ROOF]);
+	glBegin(GL_QUADS);
+	// Left Roof
+	glTexCoord2f(0.0, 0.0); glVertex3f(x, y + h, z);
+	glTexCoord2f(0.0, 10.0); glVertex3f(x, y + h + 2.0, z + (l / 2));
+	glTexCoord2f(10.0, 10.0); glVertex3f(x + w, y + h + 2.0, z + (l / 2));
+	glTexCoord2f(10.0, 0.0); glVertex3f(x + w, y + h, z);
+
+	// Right Roof
+	glTexCoord2f(0.0, 0.0); glVertex3f(x, y + h, z + l);
+	glTexCoord2f(10.0, 0.0); glVertex3f(x + w, y + h, z + l);
+	glTexCoord2f(10.0, 10.0); glVertex3f(x + w, y + h + 2.0, z + (l / 2));
+	glTexCoord2f(0.0, 10.0); glVertex3f(x, y + h + 2.0, z + (l / 2));
+	glEnd();
+
+	glBindTexture(GL_TEXTURE_2D, texture[TX_CEILING]);
+	glBegin(GL_QUADS);
+	// Left Ceiling
+	glTexCoord2f(0.0, 0.0); glVertex3f(x, y + h, z);
+	glTexCoord2f(10.0, 0.0); glVertex3f(x + w, y + h, z);
+	glTexCoord2f(10.0, 10.0); glVertex3f(x + w, y + h + 2.0, z + (l / 2));
+	glTexCoord2f(0.0, 10.0); glVertex3f(x, y + h + 2.0, z + (l / 2));
+
+	// Right Ceiling
+	glTexCoord2f(0.0, 0.0); glVertex3f(x, y + h, z + l);
+	glTexCoord2f(0.0, 10.0); glVertex3f(x, y + h + 2.0, z + (l / 2));
+	glTexCoord2f(10.0, 10.0); glVertex3f(x + w, y + h + 2.0, z + (l / 2));
+	glTexCoord2f(10.0, 0.0); glVertex3f(x + w, y + h, z + l);
+	glEnd();
+
+	// Floor
+	glBindTexture(GL_TEXTURE_2D, texture[TX_FLOOR2]);
+	glBegin(GL_QUADS);
+	glTexCoord2f(0.0, 0.0); glVertex3f(x, y + 0.001, z);
+	glTexCoord2f(0.0, 20.0); glVertex3f(x, y + 0.001, z + l);
+	glTexCoord2f(20.0, 20.0); glVertex3f(x + w, y + 0.001, z + l);
+	glTexCoord2f(20.0, 0.0); glVertex3f(x + w, y + 0.001, z);
+	glEnd();
+
+	glDisable(GL_TEXTURE_2D);
 }
 
 void drawEnv() {
 	glEnable(GL_TEXTURE_2D);
-	glBindTexture(GL_TEXTURE_2D, texture[TX_FLOOR]);
+	glBindTexture(GL_TEXTURE_2D, texture[TX_FLOOR1]);
 	glBegin(GL_QUADS);
 
 	// Floor
@@ -741,15 +844,18 @@ void drawEnv() {
 	//Walls
 	tmpZ = -30;
 	for (int i = 0; i < 9; i++) {
-		drawWall(-30, 0.0, tmpZ, 0.5, 0.5, 10.0, TX_WALL);
+		drawWall(-30, 0.0, tmpZ, 0.5, 0.5, 10.0, TX_WALL1);
 		tmpZ += 10;
 	}
 
 	tmpX = -30;
 	for (int i = 0; i < 9; i++) {
-		drawWall(tmpX, 0.0, -30, 10.0, 0.5, 0.5, TX_WALL);
+		drawWall(tmpX, 0.0, -30, 10.0, 0.5, 0.5, TX_WALL1);
 		tmpX += 10;
 	}
+
+	drawWarehouse(-20.0, 0.0, 45.0, 30.0, 3.0, 15.0);
+	drawWarehouse(20.0, 0.0, 45.0, 30.0, 3.0, 15.0);
 }
 
 void display() {
