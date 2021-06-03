@@ -7,7 +7,7 @@
 #include <GL/glut.h>
 
 #define PI 3.1415927
-#define TEXTURE_COUNT 24
+#define TEXTURE_COUNT 27
 #define SPREADER_LOWER_LIMIT 0.0
 #define SPREADER_UPPER_LIMIT 0.5
 
@@ -29,22 +29,30 @@
 #define TX_TRUCK_FRONT1 7
 #define TX_TRUCK_FRONT2 8
 #define TX_TRUCK_BODY 9
-#define TX_CONT_FRONT 10
-#define TX_CONT_BACK 11
-#define TX_CONT_SIDE 12
+#define TX_CONT1 10
+#define TX_CONT2 11
+#define TX_CONT3 12
 #define TX_FLOOR1 13
 #define TX_WATER 14
 #define TX_SKY 15
-#define TX_CONT_STACKF 16
-#define TX_CONT_STACKB 17
+#define TX_CONT4 16
+#define TX_CONT5 17
 #define TX_WALL1 18
 #define TX_WALL2 19
 #define TX_WALL3 20
 #define TX_ROOF 21
 #define TX_CEILING 22
 #define TX_FLOOR2 23
+#define TX_CONT6 24
+#define TX_CONT7 25
+#define TX_CONT8 26
 
 #define CAMERA_RAD 3.5
+
+#define CO_CN1 0
+#define CO_CN2 1
+#define CO_SKYBOX 2
+
 using namespace std;
 
 struct BitMapFile
@@ -66,6 +74,25 @@ GLfloat posCn[] = { -9.0f, 0.0f, 3.0f };
 
 GLfloat spHeight = 0.0;
 
+GLfloat coordinates[2][6][8] = {
+	{
+		{0.858, 0.650246, 0.142, 0.650246, 0.142, 0.35468, 0.858, 0.35468},
+		{0.858, 0.650246, 0.858, 0.35468, 0.142, 0.35468, 0.142, 0.650246},
+		{0.0, 0.35468, 0.0, 0.650246, 0.142, 0.650246, 0.142, 0.35468},
+		{0.858, 0.650246, 1.0, 0.650246, 1.0, 0.35468, 0.858, 0.35468},
+		{0.858, 1.0, 0.142, 1.0, 0.142, 0.650246, 0.858, 0.650246},
+		{0.858, 0.0, 0.858, 0.35468, 0.142, 0.35468, 0.142, 0.0}
+	},
+	{
+		{0.774, 0.668657, 0.22, 0.668657, 0.22, 0.334328, 0.774, 0.334328},
+		{0.774, 0.668657, 0.774, 0.334328, 0.22, 0.334328,  0.22, 0.668657},
+		{0.0, 0.668657, 0.0, 0.334328, 0.22, 0.334328, 0.22, 0.668657},
+		{1.0, 0.668657, 0.774, 0.668657, 0.774, 0.334328, 1.0, 0.334328},
+		{0.774, 1.0, 0.22, 1.0, 0.22, 0.668657, 0.774, 0.668657},
+		{0.774, 0.0, 0.774, 0.334328, 0.22, 0.334328, 0.22, 0.0}
+	}
+};
+
 int attachedTo = CNT_NONE;
 int active = STRADLE_CARRIER;
 int winId, winW, winH;
@@ -76,8 +103,7 @@ bool showGrid = false;
 
 static unsigned int texture[TEXTURE_COUNT];
 
-BitMapFile* getbmp(string filename)
-{
+BitMapFile* getbmp(string filename) {
 	int offset, headerSize;
 
 	BitMapFile* bmpRGB = new BitMapFile;
@@ -129,8 +155,7 @@ BitMapFile* getbmp(string filename)
 	return bmpRGBA;
 }
 
-void loadExternalTextures()
-{
+void loadExternalTextures() {
 	BitMapFile* image[TEXTURE_COUNT];
 	image[TX_METAL_RED] = getbmp("textures/metal_red.bmp");
 	image[TX_METAL_GRAY] = getbmp("textures/metal_gray.bmp");
@@ -142,20 +167,23 @@ void loadExternalTextures()
 	image[TX_TRUCK_FRONT2] = getbmp("textures/truck_front_bottom.bmp");
 	image[TX_TRUCK_BODY] = getbmp("textures/truck_body.bmp");
 	image[TX_GLASS_TRUCK] = getbmp("textures/truck_glass.bmp");
-	image[TX_CONT_FRONT] = getbmp("textures/container_front.bmp");
-	image[TX_CONT_BACK] = getbmp("textures/container_back.bmp");
-	image[TX_CONT_SIDE] = getbmp("textures/container_side.bmp");
 	image[TX_FLOOR1] = getbmp("textures/floor1.bmp");
 	image[TX_FLOOR2] = getbmp("textures/floor2.bmp");
 	image[TX_WATER] = getbmp("textures/water.bmp");
 	image[TX_SKY] = getbmp("textures/sky.bmp");
-	image[TX_CONT_STACKF] = getbmp("textures/container_stack_f.bmp");
-	image[TX_CONT_STACKB] = getbmp("textures/container_stack_b.bmp");
 	image[TX_WALL1] = getbmp("textures/wall1.bmp");
 	image[TX_WALL2] = getbmp("textures/wall2.bmp");
 	image[TX_WALL3] = getbmp("textures/wall3.bmp");
 	image[TX_ROOF] = getbmp("textures/roof.bmp");
 	image[TX_CEILING] = getbmp("textures/ceiling.bmp");
+	image[TX_CONT1] = getbmp("textures/container1.bmp");
+	image[TX_CONT2] = getbmp("textures/container2.bmp");
+	image[TX_CONT3] = getbmp("textures/container3.bmp");
+	image[TX_CONT4] = getbmp("textures/container4.bmp");
+	image[TX_CONT5] = getbmp("textures/container5.bmp");
+	image[TX_CONT6] = getbmp("textures/container6.bmp");
+	image[TX_CONT7] = getbmp("textures/container7.bmp");
+	image[TX_CONT8] = getbmp("textures/container8.bmp");
 
 	for (int i = 0; i < TEXTURE_COUNT; i++) {
 		glBindTexture(GL_TEXTURE_2D, texture[i]);
@@ -261,6 +289,66 @@ void drawCube(GLfloat x, GLfloat y, GLfloat z, GLfloat w, GLfloat h, GLfloat l, 
 	glTexCoord2f(0.0, 1.0); glVertex3f(x + w, y + h, z);
 	glTexCoord2f(1.0, 1.0); glVertex3f(x + w, y + h, z + l);
 	glTexCoord2f(1.0, 0.0); glVertex3f(x + w, y, z + l);
+	glEnd();
+
+	glDisable(GL_TEXTURE_2D);
+}
+
+void drawCube(GLfloat x, GLfloat y, GLfloat z, GLfloat w, GLfloat h, GLfloat l, int tx, int co) {
+	glEnable(GL_TEXTURE_2D);
+
+	// TOP
+	glBindTexture(GL_TEXTURE_2D, texture[tx]);
+	glBegin(GL_QUADS);
+	glTexCoord2f(coordinates[co][0][0], coordinates[co][0][1]); glVertex3f(x, y + h, z);
+	glTexCoord2f(coordinates[co][0][2], coordinates[co][0][3]); glVertex3f(x, y + h, z + l);
+	glTexCoord2f(coordinates[co][0][4], coordinates[co][0][5]); glVertex3f(x + w, y + h, z + l);
+	glTexCoord2f(coordinates[co][0][6], coordinates[co][0][7]); glVertex3f(x + w, y + h, z);
+	glEnd();
+
+	// BOTTOM
+	glBindTexture(GL_TEXTURE_2D, texture[tx]);
+	glBegin(GL_QUADS);
+	glTexCoord2f(coordinates[co][1][0], coordinates[co][1][1]); glVertex3f(x, y, z);
+	glTexCoord2f(coordinates[co][1][2], coordinates[co][1][3]); glVertex3f(x + w, y, z);
+	glTexCoord2f(coordinates[co][1][4], coordinates[co][1][5]); glVertex3f(x + w, y, z + l);
+	glTexCoord2f(coordinates[co][1][6], coordinates[co][1][7]); glVertex3f(x, y, z + l);
+	glEnd();
+
+	// FRONT
+	glBindTexture(GL_TEXTURE_2D, texture[tx]);
+	glBegin(GL_QUADS);
+	glTexCoord2f(coordinates[co][2][0], coordinates[co][2][1]); glVertex3f(x, y, z + l);
+	glTexCoord2f(coordinates[co][2][2], coordinates[co][2][3]); glVertex3f(x + w, y, z + l);
+	glTexCoord2f(coordinates[co][2][4], coordinates[co][2][5]); glVertex3f(x + w, y + h, z + l);
+	glTexCoord2f(coordinates[co][2][6], coordinates[co][2][7]); glVertex3f(x, y + h, z + l);
+	glEnd();
+
+	// BACK
+	glBindTexture(GL_TEXTURE_2D, texture[tx]);
+	glBegin(GL_QUADS);
+	glTexCoord2f(coordinates[co][3][0], coordinates[co][3][1]); glVertex3f(x, y, z);
+	glTexCoord2f(coordinates[co][3][2], coordinates[co][3][3]); glVertex3f(x, y + h, z);
+	glTexCoord2f(coordinates[co][3][4], coordinates[co][3][5]); glVertex3f(x + w, y + h, z);
+	glTexCoord2f(coordinates[co][3][6], coordinates[co][3][7]); glVertex3f(x + w, y, z);
+	glEnd();
+
+	// LEFT
+	glBindTexture(GL_TEXTURE_2D, texture[tx]);
+	glBegin(GL_QUADS);
+	glTexCoord2f(coordinates[co][4][0], coordinates[co][4][1]); glVertex3f(x, y, z);
+	glTexCoord2f(coordinates[co][4][2], coordinates[co][4][3]); glVertex3f(x, y, z + l);
+	glTexCoord2f(coordinates[co][4][4], coordinates[co][4][5]); glVertex3f(x, y + h, z + l);
+	glTexCoord2f(coordinates[co][4][6], coordinates[co][4][7]); glVertex3f(x, y + h, z);
+	glEnd();
+
+	// RIGHT
+	glBindTexture(GL_TEXTURE_2D, texture[tx]);
+	glBegin(GL_QUADS);
+	glTexCoord2f(coordinates[co][5][0], coordinates[co][5][1]); glVertex3f(x + w, y, z);
+	glTexCoord2f(coordinates[co][5][2], coordinates[co][5][3]); glVertex3f(x + w, y + h, z);
+	glTexCoord2f(coordinates[co][5][4], coordinates[co][5][5]); glVertex3f(x + w, y + h, z + l);
+	glTexCoord2f(coordinates[co][5][6], coordinates[co][5][7]); glVertex3f(x + w, y, z + l);
 	glEnd();
 
 	glDisable(GL_TEXTURE_2D);
@@ -415,12 +503,7 @@ void drawCabin() {
 	glDisable(GL_TEXTURE_2D);
 }
 
-void drawContainer(GLfloat width, GLfloat height, GLfloat length) {
-	int tx_Container[] = { TX_CONT_SIDE, TX_CONT_SIDE, TX_CONT_FRONT, TX_CONT_BACK, TX_CONT_SIDE, TX_CONT_SIDE };
-	drawCube(0.0, 0.065, 0.0, width, height, length, tx_Container);
-}
-
-void drawStraddleCarrier(GLfloat spreaderHeight, bool attached) {
+void drawStraddleCarrier(GLfloat spreaderHeight) {
 	int tx_Body[] = { TX_METAL_RED, TX_METAL_RED, TX_METAL_RED, TX_METAL_RED, TX_METAL_RED, TX_METAL_RED };
 	int tx_Wheel[] = { TX_TYRE, TX_WHEEL2, TX_WHEEL2 };
 	int tx_Chain[] = { TX_METAL_GRAY, TX_METAL_GRAY, TX_METAL_GRAY };
@@ -478,14 +561,6 @@ void drawStraddleCarrier(GLfloat spreaderHeight, bool attached) {
 	// SPREADER
 	drawCube(0.11, 0.635 - spreaderHeight, 0.11, 0.14, 0.02, 0.3, tx_Body);
 
-	// CONTAINER
-	if (attached) {
-		glPushMatrix();
-		glTranslatef(0.095, 0.406 - spreaderHeight, 0.06);
-		drawContainer(0.17, 0.164, 0.4);
-		glPopMatrix();
-	}
-
 	// SPREADER - CHAINS
 	glPushMatrix();
 	glTranslatef(0.12, 0.637 - spreaderHeight, 0.12);
@@ -514,7 +589,7 @@ void drawStraddleCarrier(GLfloat spreaderHeight, bool attached) {
 	glPopMatrix();
 }
 
-void drawTruck(bool attached) {
+void drawTruck() {
 	int tx_Body[] = { TX_TRUCK_BODY, TX_TRUCK_BODY, TX_TRUCK_BODY, TX_TRUCK_BODY, TX_TRUCK_BODY, TX_TRUCK_BODY };
 	int tx_Wheel[] = { TX_TYRE, TX_WHEEL1, TX_WHEEL1 };
 
@@ -522,14 +597,6 @@ void drawTruck(bool attached) {
 	glTranslatef(0.0, 0.18, 0.0);
 	// TRAILER - BASE
 	drawCube(0.05, 0.18, 0.9, 0.65, 0.05, 2.1, tx_Body);
-
-	// CONTAINER
-	if (attached) {
-		glPushMatrix();
-		glTranslatef(-0.05, 0.18, 0.95);
-		drawContainer(0.85, 0.82, 2.0);
-		glPopMatrix();
-	}
 
 	// TRAILER - WHEELS BACK (SIDE 1)
 	glPushMatrix();
@@ -844,18 +911,21 @@ void drawEnv() {
 	//Walls
 	tmpZ = -30;
 	for (int i = 0; i < 9; i++) {
-		drawWall(-30, 0.0, tmpZ, 0.5, 0.5, 10.0, TX_WALL1);
+		drawWall(-30, 0.0, tmpZ, 0.5, 0.6, 10.0, TX_WALL1);
 		tmpZ += 10;
 	}
 
 	tmpX = -30;
 	for (int i = 0; i < 9; i++) {
-		drawWall(tmpX, 0.0, -30, 10.0, 0.5, 0.5, TX_WALL1);
+		drawWall(tmpX, 0.0, -30, 10.0, 0.6, 0.5, TX_WALL1);
 		tmpX += 10;
 	}
 
-	drawWarehouse(-20.0, 0.0, 45.0, 30.0, 3.0, 15.0);
-	drawWarehouse(20.0, 0.0, 45.0, 30.0, 3.0, 15.0);
+	drawWall(-30, 0.0, 59.8, 90.0, 3.2, 0.2, TX_WALL1);
+
+	// Warehouses
+	drawWarehouse(-20.0, 0.0, 44.5, 30.0, 3.0, 15.0);
+	drawWarehouse(20.0, 0.0, 44.5, 30.0, 3.0, 15.0);
 }
 
 void display() {
@@ -904,28 +974,32 @@ void display() {
 	glPushMatrix();
 
 	// Draw Container
-	if (attachedTo == CNT_NONE) {
-		glPushMatrix();
-		glTranslatef(posCn[0], posCn[1], posCn[2]);
-		drawContainer(0.85, 0.82, 2.0);
-		glPopMatrix();
-	}
-	else if (attachedTo == CNT_SC) {
+	if (attachedTo == CNT_SC) {
 		posCn[0] = posSc[0] + (0.095 * 5);
+		posCn[1] = posSc[1] - (spHeight * 5) + 2.68;
 		posCn[2] = posSc[2] + (0.06 * 5);
 	}
+	else if (attachedTo == CNT_CT) {
+		posCn[0] = posCt[0] - 0.05;
+		posCn[1] = posCt[1] + 0.41;
+		posCn[2] = posCt[2] + 0.95;
+	}
+
+	glPushMatrix();
+	drawCube(posCn[0], posCn[1], posCn[2], 0.85, 0.82, 2.0, TX_CONT1, CO_CN1);
+	glPopMatrix();
 
 	// Draw Truck
 	glPushMatrix();
 	glTranslatef(posCt[0], 0.0, posCt[2]);
-	drawTruck(attachedTo == CNT_CT);
+	drawTruck();
 	glPopMatrix();
 
 	// Draw Straddle Carrier
 	glPushMatrix();
-	glTranslatef(posSc[0], 0.0, posSc[2]);
+	glTranslatef(posSc[0], posSc[1], posSc[2]);
 	glScalef(5.0, 5.0, 5.0);
-	drawStraddleCarrier(spHeight, attachedTo == CNT_SC);
+	drawStraddleCarrier(spHeight);
 	glPopMatrix();
 
 	glPopMatrix();
@@ -1034,15 +1108,16 @@ void keyboard(unsigned char key, int x, int y) {
 		}
 		else {
 			GLfloat diffX = posCn[0] - posSc[0];
+			GLfloat diffY = (posSc[1] - (spHeight * 5) + 2.68) - posCn[1];
 			GLfloat diffZ = posCn[2] - posSc[2];
 
 			if (attachedTo == CNT_NONE) {
-				if ((diffX > 0.31 && diffX < 0.7) && (diffZ > -0.1 && diffZ < 0.7) && spHeight >= 0.5) {
+				if ((diffX > 0.31 && diffX < 0.7) && (diffZ > -0.1 && diffZ < 0.7) && (diffY > 0 && diffY < 0.15)) {
 					attachedTo = CNT_SC;
 				}
 			}
 			else if (attachedTo == CNT_CT) {
-				if ((diffX > 0.2 && diffX < 0.7) && (diffZ > -0.1 && diffZ < 0.7) && spHeight >= 0.41) {
+				if ((diffX > 0.2 && diffX < 0.7) && (diffZ > -0.1 && diffZ < 0.7) && (diffY > 0 && diffY < 0.15)) {
 					attachedTo = CNT_SC;
 				}
 			}
@@ -1059,7 +1134,13 @@ void mouse(int x, int y) {
 	if (x != midX || y != midY) {
 		glutWarpPointer(midX, midY);
 
-		rotY += (GLfloat)((midX - x)) / 1000;
+		if (active == NONE) {
+			rotY -= (GLfloat)((midX - x)) / 1000;
+		}
+		else {
+			rotY += (GLfloat)((midX - x)) / 1000;
+		}
+
 		rotX += (GLfloat)((midY - y)) / 500;
 
 		if (rotX < 0.0) rotX = 0.0;
