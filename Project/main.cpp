@@ -68,13 +68,13 @@ GLfloat rotY = 3.1f;
 GLfloat posCam[3];
 GLfloat posCenter[3];
 
-GLfloat posSc[] = { -9.0f, 0.0f, -10.0f };
+GLfloat posSc[] = { -0.9f, 0.0f, -14.0f };
 GLfloat posCt[] = { -12.0f, 0.0f, -9.0f };
-GLfloat posCn[] = { -9.0f, 0.0f, 3.0f };
+GLfloat posCn[] = { -0.45f, 0.0f, 3.0f };
 
 GLfloat spHeight = 0.0;
 
-GLfloat coordinates[2][6][8] = {
+static GLfloat coordinates[2][6][8] = {
 	{
 		{0.858, 0.650246, 0.142, 0.650246, 0.142, 0.35468, 0.858, 0.35468},
 		{0.858, 0.650246, 0.858, 0.35468, 0.142, 0.35468, 0.142, 0.650246},
@@ -102,6 +102,10 @@ bool showAxes = false;
 bool showGrid = false;
 
 static unsigned int texture[TEXTURE_COUNT];
+static unsigned int CStacks[7] = { TX_CONT2, TX_CONT3, TX_CONT4, TX_CONT5, TX_CONT6, TX_CONT7, TX_CONT8 };
+
+unsigned int stack1[44];
+unsigned int stack2[100];
 
 BitMapFile* getbmp(string filename) {
 	int offset, headerSize;
@@ -926,6 +930,23 @@ void drawEnv() {
 	// Warehouses
 	drawWarehouse(-20.0, 0.0, 44.5, 30.0, 3.0, 15.0);
 	drawWarehouse(20.0, 0.0, 44.5, 30.0, 3.0, 15.0);
+
+	// Container Stacks
+	for (int i = 0; i < 44; i++) {
+		drawCube(58.3, 0.0, 57.88 - (i * 2.03), 1.7, 1.64, 2.0, stack1[i], CO_CN2);
+		drawCube(58.3, 1.64, 57.88 - (i * 2.03), 1.7, 1.64, 2.0, stack1[43 - i], CO_CN2);
+	}
+
+	for (int i = 0; i < 4; i++) {
+		for (int j = 0; j < 25; j++) {
+			int t = (i * 25) + j;
+			drawCube(40.0 - (16 * i), 0.0, 28 - (j * 2.03), 1.7, 1.64, 2.0, stack2[t], CO_CN2);
+			drawCube(40.0 - (16 * i), 1.64, 28 - (j * 2.03), 1.7, 1.64, 2.0, stack2[99 - t], CO_CN2);
+
+			drawCube(38.3 - (16 * i), 0.0, 28 - (j * 2.03), 1.7, 1.64, 2.0, stack2[t], CO_CN2);
+			drawCube(38.3 - (16 * i), 1.64, 28 - (j * 2.03), 1.7, 1.64, 2.0, stack2[99 - t], CO_CN2);
+		}
+	}
 }
 
 void display() {
@@ -1181,6 +1202,15 @@ void changeSize(GLsizei w, GLsizei h) {
 
 int main(int argc, char** argv) {
 	srand(time(NULL));
+
+	for (int i = 0; i < 44; i++) {
+		stack1[i] = CStacks[rand() % 7];
+		stack2[i] = CStacks[rand() % 7];
+	}
+
+	for (int i = 44; i < 100; i++) {
+		stack2[i] = CStacks[rand() % 7];
+	}
 
 	glutInit(&argc, argv);
 
