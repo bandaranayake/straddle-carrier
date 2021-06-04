@@ -7,7 +7,7 @@
 #include <GL/glut.h>
 
 #define PI 3.1415927
-#define TEXTURE_COUNT 27
+#define TEXTURE_COUNT 34
 #define SPREADER_LOWER_LIMIT 0.0
 #define SPREADER_UPPER_LIMIT 0.5
 
@@ -46,6 +46,13 @@
 #define TX_CONT6 24
 #define TX_CONT7 25
 #define TX_CONT8 26
+#define TX_CONT9 27
+#define TX_CONT10 28
+#define TX_CONT11 29
+#define TX_CONT12 30
+#define TX_CONT13 31
+#define TX_CONT14 32
+#define TX_CONT15 33
 
 #define CAMERA_RAD 3.5
 
@@ -102,8 +109,8 @@ bool showAxes = false;
 bool showGrid = false;
 
 static unsigned int texture[TEXTURE_COUNT];
-static unsigned int CStacks[7] = { TX_CONT2, TX_CONT3, TX_CONT4, TX_CONT5, TX_CONT6, TX_CONT7, TX_CONT8 };
-
+static unsigned int CStacks[15] = { TX_CONT2, TX_CONT3, TX_CONT4, TX_CONT5, TX_CONT6, TX_CONT7, TX_CONT8,
+								TX_CONT9, TX_CONT10, TX_CONT11, TX_CONT12, TX_CONT13, TX_CONT14, TX_CONT15 };
 unsigned int stack1[44];
 unsigned int stack2[100];
 
@@ -188,6 +195,13 @@ void loadExternalTextures() {
 	image[TX_CONT6] = getbmp("textures/container6.bmp");
 	image[TX_CONT7] = getbmp("textures/container7.bmp");
 	image[TX_CONT8] = getbmp("textures/container8.bmp");
+	image[TX_CONT9] = getbmp("textures/container9.bmp");
+	image[TX_CONT10] = getbmp("textures/container10.bmp");
+	image[TX_CONT11] = getbmp("textures/container11.bmp");
+	image[TX_CONT12] = getbmp("textures/container12.bmp");
+	image[TX_CONT13] = getbmp("textures/container13.bmp");
+	image[TX_CONT14] = getbmp("textures/container14.bmp");
+	image[TX_CONT15] = getbmp("textures/container15.bmp");
 
 	for (int i = 0; i < TEXTURE_COUNT; i++) {
 		glBindTexture(GL_TEXTURE_2D, texture[i]);
@@ -933,18 +947,18 @@ void drawEnv() {
 
 	// Container Stacks
 	for (int i = 0; i < 44; i++) {
-		drawCube(58.3, 0.0, 57.88 - (i * 2.03), 1.7, 1.64, 2.0, stack1[i], CO_CN2);
-		drawCube(58.3, 1.64, 57.88 - (i * 2.03), 1.7, 1.64, 2.0, stack1[43 - i], CO_CN2);
+		drawCube(58.3, 0.0, 57.88 - (i * 2.0), 1.7, 1.64, 2.0, stack1[i], CO_CN2);
+		drawCube(58.3, 1.64, 57.88 - (i * 2.0), 1.7, 1.64, 2.0, stack1[43 - i], CO_CN2);
 	}
 
 	for (int i = 0; i < 4; i++) {
 		for (int j = 0; j < 25; j++) {
 			int t = (i * 25) + j;
-			drawCube(40.0 - (16 * i), 0.0, 28 - (j * 2.03), 1.7, 1.64, 2.0, stack2[t], CO_CN2);
-			drawCube(40.0 - (16 * i), 1.64, 28 - (j * 2.03), 1.7, 1.64, 2.0, stack2[99 - t], CO_CN2);
+			drawCube(40.0 - (16 * i), 0.0, 28 - (j * 2.0), 1.7, 1.64, 2.0, stack2[t], CO_CN2);
+			drawCube(40.0 - (16 * i), 1.64, 28 - (j * 2.0), 1.7, 1.64, 2.0, stack2[99 - t], CO_CN2);
 
-			drawCube(38.3 - (16 * i), 0.0, 28 - (j * 2.03), 1.7, 1.64, 2.0, stack2[t], CO_CN2);
-			drawCube(38.3 - (16 * i), 1.64, 28 - (j * 2.03), 1.7, 1.64, 2.0, stack2[99 - t], CO_CN2);
+			drawCube(38.3 - (16 * i), 0.0, 28 - (j * 2.0), 1.7, 1.64, 2.0, stack2[t], CO_CN2);
+			drawCube(38.3 - (16 * i), 1.64, 28 - (j * 2.0), 1.7, 1.64, 2.0, stack2[99 - t], CO_CN2);
 		}
 	}
 }
@@ -1204,12 +1218,12 @@ int main(int argc, char** argv) {
 	srand(time(NULL));
 
 	for (int i = 0; i < 44; i++) {
-		stack1[i] = CStacks[rand() % 7];
-		stack2[i] = CStacks[rand() % 7];
+		stack1[i] = CStacks[rand() % 14];
+		stack2[i] = CStacks[rand() % 14];
 	}
 
 	for (int i = 44; i < 100; i++) {
-		stack2[i] = CStacks[rand() % 7];
+		stack2[i] = CStacks[rand() % 14];
 	}
 
 	glutInit(&argc, argv);
