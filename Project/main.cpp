@@ -7,7 +7,7 @@
 #include <GL/glut.h>
 
 #define PI 3.1415927
-#define TEXTURE_COUNT 34
+#define TEXTURE_COUNT 38
 #define SPREADER_LOWER_LIMIT 0.0
 #define SPREADER_UPPER_LIMIT 0.5
 
@@ -33,8 +33,8 @@
 #define TX_CONT2 11
 #define TX_CONT3 12
 #define TX_FLOOR1 13
-#define TX_WATER 14
-#define TX_SKY 15
+#define SKYBOX_TOP 14
+#define SKYBOX_DOWN 15
 #define TX_CONT4 16
 #define TX_CONT5 17
 #define TX_WALL1 18
@@ -53,6 +53,10 @@
 #define TX_CONT13 31
 #define TX_CONT14 32
 #define TX_CONT15 33
+#define SKYBOX_FRONT 34
+#define SKYBOX_BACK 35
+#define SKYBOX_LEFT 36
+#define SKYBOX_RIGHT 37
 
 #define CAMERA_RAD 3.5
 
@@ -180,8 +184,6 @@ void loadExternalTextures() {
 	image[TX_GLASS_TRUCK] = getbmp("textures/truck_glass.bmp");
 	image[TX_FLOOR1] = getbmp("textures/floor1.bmp");
 	image[TX_FLOOR2] = getbmp("textures/floor2.bmp");
-	image[TX_WATER] = getbmp("textures/water.bmp");
-	image[TX_SKY] = getbmp("textures/sky.bmp");
 	image[TX_WALL1] = getbmp("textures/wall1.bmp");
 	image[TX_WALL2] = getbmp("textures/wall2.bmp");
 	image[TX_WALL3] = getbmp("textures/wall3.bmp");
@@ -202,6 +204,12 @@ void loadExternalTextures() {
 	image[TX_CONT13] = getbmp("textures/container13.bmp");
 	image[TX_CONT14] = getbmp("textures/container14.bmp");
 	image[TX_CONT15] = getbmp("textures/container15.bmp");
+	image[SKYBOX_TOP] = getbmp("textures/skybox_top.bmp");
+	image[SKYBOX_DOWN] = getbmp("textures/skybox_down.bmp");
+	image[SKYBOX_FRONT] = getbmp("textures/skybox_front.bmp");
+	image[SKYBOX_BACK] = getbmp("textures/skybox_back.bmp");
+	image[SKYBOX_LEFT] = getbmp("textures/skybox_left.bmp");
+	image[SKYBOX_RIGHT] = getbmp("textures/skybox_right.bmp");
 
 	for (int i = 0; i < TEXTURE_COUNT; i++) {
 		glBindTexture(GL_TEXTURE_2D, texture[i]);
@@ -890,12 +898,76 @@ void drawWarehouse(GLfloat x, GLfloat y, GLfloat z, GLfloat w, GLfloat h, GLfloa
 	glDisable(GL_TEXTURE_2D);
 }
 
+void drawSkybox(GLfloat x, GLfloat y, GLfloat z, GLfloat w, GLfloat h, GLfloat l) {
+	x = x - w / 2;
+	y = y - h / 2;
+	z = z - l / 2;
+
+	glEnable(GL_TEXTURE_2D);
+
+	// TOP
+	glBindTexture(GL_TEXTURE_2D, texture[SKYBOX_TOP]);
+	glBegin(GL_QUADS);
+	glTexCoord2f(1.0, 1.0); glVertex3f(x, y + h, z);
+	glTexCoord2f(0.0, 1.0); glVertex3f(x + w, y + h, z);
+	glTexCoord2f(0.0, 0.0); glVertex3f(x + w, y + h, z + l);
+	glTexCoord2f(1.0, 0.0); glVertex3f(x, y + h, z + l);
+	glEnd();
+
+	// BOTTOM
+	glBindTexture(GL_TEXTURE_2D, texture[SKYBOX_DOWN]);
+	glBegin(GL_QUADS);
+	glTexCoord2f(1.0, 0.0); glVertex3f(x, y, z);
+	glTexCoord2f(1.0, 1.0); glVertex3f(x, y, z + l);
+	glTexCoord2f(0.0, 1.0); glVertex3f(x + w, y, z + l);
+	glTexCoord2f(0.0, 0.0); glVertex3f(x + w, y, z);
+	glEnd();
+
+	// FRONT
+	glBindTexture(GL_TEXTURE_2D, texture[SKYBOX_FRONT]);
+	glBegin(GL_QUADS);
+	glTexCoord2f(1.0, 0.0); glVertex3f(x, y, z + l);
+	glTexCoord2f(1.0, 1.0); glVertex3f(x, y + h, z + l);
+	glTexCoord2f(0.0, 1.0); glVertex3f(x + w, y + h, z + l);
+	glTexCoord2f(0.0, 0.0); glVertex3f(x + w, y, z + l);
+	glEnd();
+
+	// BACK
+	glBindTexture(GL_TEXTURE_2D, texture[SKYBOX_BACK]);
+	glBegin(GL_QUADS);
+	glTexCoord2f(0.0, 0.0); glVertex3f(x, y, z);
+	glTexCoord2f(1.0, 0.0); glVertex3f(x + w, y, z);
+	glTexCoord2f(1.0, 1.0); glVertex3f(x + w, y + h, z);
+	glTexCoord2f(0.0, 1.0); glVertex3f(x, y + h, z);
+	glEnd();
+
+	// LEFT
+	glBindTexture(GL_TEXTURE_2D, texture[SKYBOX_LEFT]);
+	glBegin(GL_QUADS);
+	glTexCoord2f(1.0, 0.0); glVertex3f(x, y, z);
+	glTexCoord2f(1.0, 1.0); glVertex3f(x, y + h, z);
+	glTexCoord2f(0.0, 1.0); glVertex3f(x, y + h, z + l);
+	glTexCoord2f(0.0, 0.0); glVertex3f(x, y, z + l);
+	glEnd();
+
+	// RIGHT
+	glBindTexture(GL_TEXTURE_2D, texture[SKYBOX_RIGHT]);
+	glBegin(GL_QUADS);
+	glTexCoord2f(0.0, 0.0); glVertex3f(x + w, y, z);
+	glTexCoord2f(1.0, 0.0); glVertex3f(x + w, y, z + l);
+	glTexCoord2f(1.0, 1.0); glVertex3f(x + w, y + h, z + l);
+	glTexCoord2f(0.0, 1.0); glVertex3f(x + w, y + h, z);
+	glEnd();
+
+	glDisable(GL_TEXTURE_2D);
+}
+
 void drawEnv() {
+	// Floor
 	glEnable(GL_TEXTURE_2D);
 	glBindTexture(GL_TEXTURE_2D, texture[TX_FLOOR1]);
 	glBegin(GL_QUADS);
 
-	// Floor
 	GLfloat tmpZ = -30;
 	GLfloat tmpX = -30;
 	for (int i = 0; i < 9; i++) {
@@ -909,20 +981,6 @@ void drawEnv() {
 		tmpZ += 10;
 		tmpX = -30;
 	}
-	glEnd();
-
-	// Water
-	glBindTexture(GL_TEXTURE_2D, texture[TX_WATER]);
-	glBegin(GL_QUADS);
-	glTexCoord2f(0.0, 0.0); glVertex3f(-30.0, 0.0, -30.0);
-	glTexCoord2f(1.0, 0.0); glVertex3f(-60.0, 0.0, -30.0);
-	glTexCoord2f(1.0, 1.0); glVertex3f(-60.0, 0.0, 60.0);
-	glTexCoord2f(0.0, 1.0); glVertex3f(-30.0, 0.0, 60.0);
-
-	glTexCoord2f(1.0, 0.0); glVertex3f(-60.0, 0.0, -30.0);
-	glTexCoord2f(0.0, 1.0); glVertex3f(60.0, 0.0, -30.0);
-	glTexCoord2f(1.0, 1.0); glVertex3f(60.0, 0.0, -60.0);
-	glTexCoord2f(0.0, 0.0); glVertex3f(-60.0, 0.0, -60.0);
 	glEnd();
 	glDisable(GL_TEXTURE_2D);
 
@@ -961,6 +1019,8 @@ void drawEnv() {
 			drawCube(38.3 - (16 * i), 1.64, 28 - (j * 2.0), 1.7, 1.64, 2.0, stack2[99 - t], CO_CN2);
 		}
 	}
+
+	drawSkybox(0.0, 0.0, 0.0, 120.0, 80.0, 120.0);
 }
 
 void display() {
@@ -1209,7 +1269,7 @@ void changeSize(GLsizei w, GLsizei h) {
 
 	glMatrixMode(GL_PROJECTION);
 	glLoadIdentity();
-	gluPerspective(120.0, aspect_ratio, 1.0, 100.0);
+	gluPerspective(120.0, aspect_ratio, 1.0, 150.0);
 	glMatrixMode(GL_MODELVIEW);
 	glLoadIdentity();
 }
