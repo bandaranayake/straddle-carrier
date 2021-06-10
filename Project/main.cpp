@@ -1179,18 +1179,20 @@ void display() {
 
 	// Draw Container
 	if (attachedTo == CNT_SC) {
-		posCn[0] = posSc[0] + (0.095 * 5);
+		posCn[0] = posSc[0] + 1.325;
 		posCn[1] = posSc[1] - (spHeight * 5) + 2.68;
-		posCn[2] = posSc[2] + (0.06 * 5);
+		posCn[2] = posSc[2] + 2.3;
 	}
 	else if (attachedTo == CNT_CT) {
-		posCn[0] = posCt[0] - 0.05;
+		posCn[0] = posCt[0] + 0.05;
 		posCn[1] = posCt[1] + 0.41;
-		posCn[2] = posCt[2] + 0.95;
+		posCn[2] = posCt[2] - 0.95;
 	}
 
 	glPushMatrix();
-	drawCube(posCn[0], posCn[1], posCn[2], 0.85, 0.82, 2.0, TX_CONT1, CO_CN1);
+	glTranslatef(posCn[0], posCn[1], posCn[2]);
+	glRotatef(180, 0, 1, 0);
+	drawCube(0.0, 0.0, 0.0, 0.85, 0.82, 2.0, TX_CONT1, CO_CN1);
 	glPopMatrix();
 
 	// Draw Truck
@@ -1231,23 +1233,8 @@ void display() {
 	glutSwapBuffers();
 }
 
-void keyboardSpecial(int key, int x, int y) {
-	if (key == GLUT_KEY_F1) {
-		showAxes = !showAxes;
-	}
-	else if (key == GLUT_KEY_F2) {
-		showGrid = !showGrid;
-	}
-	else if (key == GLUT_KEY_F3) {
-		if (showWireframe) {
-			glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
-		}
-		else {
-			glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
-		}
-		showWireframe = !showWireframe;
-	}
-	else if (active == NONE) {
+void handleKeyPress(unsigned char key) {
+	if (active == NONE) {
 		if (key == GLUT_KEY_UP) {
 			posCam[2] += 1.0;
 		}
@@ -1274,12 +1261,6 @@ void keyboardSpecial(int key, int x, int y) {
 		else if (key == GLUT_KEY_RIGHT) {
 			posSc[0] -= 0.1;
 		}
-		else if (key == GLUT_KEY_PAGE_DOWN) {
-			if (SPREADER_UPPER_LIMIT > spHeight) spHeight += 0.01;
-		}
-		else if (key == GLUT_KEY_PAGE_UP) {
-			if (SPREADER_LOWER_LIMIT < spHeight) spHeight -= 0.01;
-		}
 	}
 	else if (active == CONTAINER_TRUCK) {
 		if (key == GLUT_KEY_UP) {
@@ -1295,6 +1276,38 @@ void keyboardSpecial(int key, int x, int y) {
 			posCt[0] += 0.2;
 		}
 	}
+}
+
+void keyboardSpecial(int key, int x, int y) {
+	if (key == GLUT_KEY_F1) {
+		showAxes = !showAxes;
+	}
+	else if (key == GLUT_KEY_F2) {
+		showGrid = !showGrid;
+	}
+	else if (key == GLUT_KEY_F3) {
+		if (showWireframe) {
+			glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+		}
+		else {
+			glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+		}
+		showWireframe = !showWireframe;
+	}
+	else if (key == GLUT_KEY_PAGE_DOWN) {
+		if (active == STRADLE_CARRIER && SPREADER_UPPER_LIMIT > spHeight) {
+			spHeight += 0.01;
+		}
+	}
+	else if (key == GLUT_KEY_PAGE_UP) {
+		if (active == STRADLE_CARRIER && SPREADER_LOWER_LIMIT < spHeight) {
+			spHeight -= 0.01;
+		}
+	}
+	else {
+		handleKeyPress(key);
+	}
+
 	glutPostRedisplay();
 }
 
@@ -1316,12 +1329,24 @@ void keyboard(unsigned char key, int x, int y) {
 		rotX = 0.0;
 		rotY = 3.13;
 	}
+	else if (key == 'w') {
+		handleKeyPress(GLUT_KEY_UP);
+	}
+	else if (key == 'a') {
+		handleKeyPress(GLUT_KEY_LEFT);
+	}
+	else if (key == 's') {
+		handleKeyPress(GLUT_KEY_DOWN);
+	}
+	else if (key == 'd') {
+		handleKeyPress(GLUT_KEY_RIGHT);
+	}
 	else if (active == STRADLE_CARRIER && key == ' ') {
 		if (attachedTo == CNT_SC) {
 			GLfloat diffX = posCt[0] - posSc[0];
 			GLfloat diffZ = posCt[2] - posSc[2];
 
-			if ((diffX > 0.2 && diffX < 0.8) && (diffZ > -0.8 && diffZ < -0.2)) {
+			if ((diffX > 1.1 && diffX < 1.5) && (diffZ > 3.1 && diffZ < 3.4)) {
 				attachedTo = CNT_CT;
 			}
 			else {
@@ -1334,15 +1359,8 @@ void keyboard(unsigned char key, int x, int y) {
 			GLfloat diffY = (posSc[1] - (spHeight * 5) + 2.68) - posCn[1];
 			GLfloat diffZ = posCn[2] - posSc[2];
 
-			if (attachedTo == CNT_NONE) {
-				if ((diffX > 0.31 && diffX < 0.7) && (diffZ > -0.1 && diffZ < 0.7) && (diffY > 0 && diffY < 0.15)) {
-					attachedTo = CNT_SC;
-				}
-			}
-			else if (attachedTo == CNT_CT) {
-				if ((diffX > 0.2 && diffX < 0.7) && (diffZ > -0.1 && diffZ < 0.7) && (diffY > 0 && diffY < 0.15)) {
-					attachedTo = CNT_SC;
-				}
+			if ((diffX > 1.2 && diffX < 1.5) && (diffZ > 1.9 && diffZ < 2.7) && (diffY > 0 && diffY < 0.15)) {
+				attachedTo = CNT_SC;
 			}
 		}
 	}
@@ -1396,8 +1414,6 @@ void timer(int x) {
 }
 
 void init() {
-	glClearColor(0.0, 0.0, 0.0, 1.0);
-
 	GLfloat globalAmbient[] = { 0.6, 0.6, 0.6, 0.0 };
 	glLightModelfv(GL_LIGHT_MODEL_AMBIENT, globalAmbient);
 
