@@ -962,6 +962,30 @@ void drawSkybox(GLfloat x, GLfloat y, GLfloat z, GLfloat w, GLfloat h, GLfloat l
 	glDisable(GL_TEXTURE_2D);
 }
 
+void drawPost(GLfloat x, GLfloat y, GLfloat z) {
+	int tx_Post[] = { TX_METAL_GRAY, TX_METAL_GRAY, TX_METAL_GRAY };
+	int tx_PostTop[] = { TX_GLASS_CABIN, TX_WALL2, TX_GLASS_CABIN, TX_GLASS_CABIN, TX_GLASS_CABIN, TX_GLASS_CABIN };
+
+	glPushMatrix();
+	glTranslatef(x, y, z);
+
+	glPushMatrix();
+	glRotatef(90.0, 0.0, 0.0, 1.0);
+	drawCylinder(0.2, 6.0, tx_Post);
+	glPopMatrix();
+
+	glPushMatrix();
+	glTranslatef(0.0, 5.8, 0.0);
+	glRotatef(-90.0, 0.0, 1.0, 0.0);
+	glRotatef(15.0, 0.0, 0.0, 1.0);
+	drawCylinder(0.1, 2.0, tx_Post);
+	glPopMatrix();
+
+	glTranslatef(-0.6, 0.0, 1.85);
+	drawCube(0.0, 6.25, 0.0, 1.2, 0.1, 1.2, tx_PostTop);
+	glPopMatrix();
+}
+
 void drawEnv() {
 	// Floor
 	glEnable(GL_TEXTURE_2D);
@@ -1018,6 +1042,10 @@ void drawEnv() {
 			drawCube(38.3 - (16 * i), 0.0, 28 - (j * 2.0), 1.7, 1.64, 2.0, stack2[t], CO_CN2);
 			drawCube(38.3 - (16 * i), 1.64, 28 - (j * 2.0), 1.7, 1.64, 2.0, stack2[99 - t], CO_CN2);
 		}
+	}
+
+	for (int i = 0; i < 5; i++) {
+		drawPost((i * 20.0) - 25.0, 0.0, -29.0);
 	}
 
 	drawSkybox(0.0, 0.0, 0.0, 120.0, 80.0, 120.0);
