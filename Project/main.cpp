@@ -1051,6 +1051,54 @@ void drawEnv() {
 	drawSkybox(0.0, 0.0, 0.0, 120.0, 80.0, 120.0);
 }
 
+void initLighting() {
+	GLfloat L_Ambient[] = { 1.0, 1.0, 0.15, 1.0 };
+	GLfloat L_Diffuse[] = { 1.0, 1.0, 1.0, 1.0 };
+	GLfloat L_Specular[] = { 1.0, 1.0, 1.0, 1.0 };
+	GLfloat L_SpotDirection[] = { 0.0, -1.0, 1.0 };
+
+	GLfloat L0_Postion[] = { -25.0, 6.0, -26.0, 1.0 };
+	GLfloat L1_Postion[] = { -5.0, 6.0, -26.0, 1.0 };
+	GLfloat L2_Postion[] = { 15.0, 6.0, -26.0, 1.0 };
+	GLfloat L3_Postion[] = { 35.0, 6.0, -26.0, 1.0 };
+	GLfloat L4_Postion[] = { 55.0, 6.0, -26.0, 1.0 };
+
+	glLightfv(GL_LIGHT0, GL_AMBIENT, L_Ambient);
+	glLightfv(GL_LIGHT0, GL_DIFFUSE, L_Diffuse);
+	glLightfv(GL_LIGHT0, GL_SPECULAR, L_Specular);
+	glLightfv(GL_LIGHT0, GL_POSITION, L0_Postion);
+	glLightfv(GL_LIGHT0, GL_SPOT_DIRECTION, L_SpotDirection);
+	glLightf(GL_LIGHT0, GL_SPOT_CUTOFF, 60);
+
+	glLightfv(GL_LIGHT1, GL_AMBIENT, L_Ambient);
+	glLightfv(GL_LIGHT1, GL_DIFFUSE, L_Diffuse);
+	glLightfv(GL_LIGHT1, GL_SPECULAR, L_Specular);
+	glLightfv(GL_LIGHT1, GL_POSITION, L1_Postion);
+	glLightfv(GL_LIGHT1, GL_SPOT_DIRECTION, L_SpotDirection);
+	glLightf(GL_LIGHT1, GL_SPOT_CUTOFF, 60);
+
+	glLightfv(GL_LIGHT2, GL_AMBIENT, L_Ambient);
+	glLightfv(GL_LIGHT2, GL_DIFFUSE, L_Diffuse);
+	glLightfv(GL_LIGHT2, GL_SPECULAR, L_Specular);
+	glLightfv(GL_LIGHT2, GL_POSITION, L2_Postion);
+	glLightfv(GL_LIGHT2, GL_SPOT_DIRECTION, L_SpotDirection);
+	glLightf(GL_LIGHT2, GL_SPOT_CUTOFF, 60);
+
+	glLightfv(GL_LIGHT3, GL_AMBIENT, L_Ambient);
+	glLightfv(GL_LIGHT3, GL_DIFFUSE, L_Diffuse);
+	glLightfv(GL_LIGHT3, GL_SPECULAR, L_Specular);
+	glLightfv(GL_LIGHT3, GL_POSITION, L3_Postion);
+	glLightfv(GL_LIGHT3, GL_SPOT_DIRECTION, L_SpotDirection);
+	glLightf(GL_LIGHT3, GL_SPOT_CUTOFF, 60);
+
+	glLightfv(GL_LIGHT4, GL_AMBIENT, L_Ambient);
+	glLightfv(GL_LIGHT4, GL_DIFFUSE, L_Diffuse);
+	glLightfv(GL_LIGHT4, GL_SPECULAR, L_Specular);
+	glLightfv(GL_LIGHT4, GL_POSITION, L4_Postion);
+	glLightfv(GL_LIGHT4, GL_SPOT_DIRECTION, L_SpotDirection);
+	glLightf(GL_LIGHT4, GL_SPOT_CUTOFF, 60);
+}
+
 void display() {
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 	glPushMatrix();
@@ -1080,6 +1128,8 @@ void display() {
 
 		gluLookAt(camX, camY, camZ, posCenter[0], posCenter[1], posCenter[2], 0.0, 1.0, 0.0);
 	}
+
+	initLighting();
 
 	// Draw environment
 	drawEnv();
@@ -1278,14 +1328,34 @@ void timer(int x) {
 }
 
 void init() {
-	glClearColor(0.0, 0.364, 0.741, 1.0);
+	glClearColor(0.0, 0.0, 0.0, 1.0);
+
+	GLfloat globalAmbient[] = { 0.6, 0.6, 0.6, 0.0 };
+	glLightModelfv(GL_LIGHT_MODEL_AMBIENT, globalAmbient);
+
 	glGenTextures(TEXTURE_COUNT, texture);
 	loadExternalTextures();
 
 	glEnable(GL_DEPTH_TEST);
 	glEnable(GL_CULL_FACE);
 
-	glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE);
+	glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
+
+	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+	glHint(GL_LINE_SMOOTH_HINT, GL_DONT_CARE);
+	glShadeModel(GL_SMOOTH);
+
+	glEnable(GL_LINE_SMOOTH);
+	glEnable(GL_LIGHTING);
+
+	glEnable(GL_LIGHT0);
+	glEnable(GL_LIGHT1);
+	glEnable(GL_LIGHT2);
+	glEnable(GL_LIGHT3);
+	glEnable(GL_LIGHT4);
+
+	glEnable(GL_COLOR_MATERIAL);
+	glEnable(GL_NORMALIZE);
 }
 
 void changeSize(GLsizei w, GLsizei h) {
