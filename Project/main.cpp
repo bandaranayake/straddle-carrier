@@ -74,7 +74,7 @@ struct BitMapFile
 };
 
 GLfloat rotX = 0.0f;
-GLfloat rotY = 3.1f;
+GLfloat rotY = 3.13f;
 
 GLfloat posCam[3];
 GLfloat posCenter[3];
@@ -1136,9 +1136,9 @@ void display() {
 		posCenter[2] = posSc[2] + 1.6;
 	}
 	else if (active == CONTAINER_TRUCK) {
-		posCenter[0] = posCt[0] + 0.375;
+		posCenter[0] = posCt[0] - 0.375;
 		posCenter[1] = 1.0;
-		posCenter[2] = posCt[2] + 2.3;
+		posCenter[2] = posCt[2] - 2.3;
 	}
 
 	if (active == NONE) {
@@ -1150,7 +1150,14 @@ void display() {
 	else {
 		GLfloat camX = posCenter[0] + (CAMERA_RAD * sin(rotY));
 		GLfloat camY = 2.0 + rotX;
-		GLfloat camZ = posCenter[2] + (CAMERA_RAD * cos(rotY));
+		GLfloat camZ;
+
+		if (active == STRADLE_CARRIER) {
+			camZ = posCenter[2] + (CAMERA_RAD * cos(rotY));
+		}
+		else {
+			camZ = posCenter[2] - (CAMERA_RAD * cos(rotY));
+		}
 
 		gluLookAt(camX, camY, camZ, posCenter[0], posCenter[1], posCenter[2], 0.0, 1.0, 0.0);
 	}
@@ -1189,6 +1196,7 @@ void display() {
 	// Draw Truck
 	glPushMatrix();
 	glTranslatef(posCt[0], 0.0, posCt[2]);
+	glRotatef(180, 0, 1, 0);
 	drawTruck();
 	glPopMatrix();
 
@@ -1275,16 +1283,16 @@ void keyboardSpecial(int key, int x, int y) {
 	}
 	else if (active == CONTAINER_TRUCK) {
 		if (key == GLUT_KEY_UP) {
-			posCt[2] += 0.2;
-		}
-		else if (key == GLUT_KEY_DOWN) {
 			posCt[2] -= 0.2;
 		}
+		else if (key == GLUT_KEY_DOWN) {
+			posCt[2] += 0.2;
+		}
 		else if (key == GLUT_KEY_LEFT) {
-			posCt[0] += 0.2;
+			posCt[0] -= 0.2;
 		}
 		else if (key == GLUT_KEY_RIGHT) {
-			posCt[0] -= 0.2;
+			posCt[0] += 0.2;
 		}
 	}
 	glutPostRedisplay();
@@ -1301,12 +1309,12 @@ void keyboard(unsigned char key, int x, int y) {
 	else if (key == '1') {
 		active = STRADLE_CARRIER;
 		rotX = 0.0;
-		rotY = 3.1;
+		rotY = 3.13;
 	}
 	else if (key == '2') {
 		active = CONTAINER_TRUCK;
 		rotX = 0.0;
-		rotY = 3.1;
+		rotY = 3.13;
 	}
 	else if (active == STRADLE_CARRIER && key == ' ') {
 		if (attachedTo == CNT_SC) {
@@ -1349,17 +1357,18 @@ void mouse(int x, int y) {
 	if (x != midX || y != midY) {
 		glutWarpPointer(midX, midY);
 
-		if (active == NONE) {
-			rotY -= (GLfloat)((midX - x)) / 1000;
+		if (active == STRADLE_CARRIER) {
+			rotY += (GLfloat)((midX - x)) / 1000;
 		}
 		else {
-			rotY += (GLfloat)((midX - x)) / 1000;
+			rotY -= (GLfloat)((midX - x)) / 1000;
 		}
 
 		rotX += (GLfloat)((midY - y)) / 500;
 
 		if (rotX < 0.0) rotX = 0.0;
 		if (rotX > 3.0) rotX = 3.0;
+
 		glutPostRedisplay();
 	}
 }
