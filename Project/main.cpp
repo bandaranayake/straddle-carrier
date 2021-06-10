@@ -80,8 +80,11 @@ GLfloat posCam[3];
 GLfloat posCenter[3];
 
 GLfloat posSc[] = { -0.9f, 0.0f, -14.0f };
-GLfloat posCt[] = { -12.0f, 0.0f, -9.0f };
+GLfloat posCt[] = { -0.7f, 0.0f, 48.0f };
 GLfloat posCn[] = { -0.45f, 0.0f, 3.0f };
+
+GLfloat posTrucks[3][2];
+bool dirTrucks[3];
 
 GLfloat spHeight = 0.0;
 
@@ -1044,10 +1047,33 @@ void drawEnv() {
 		}
 	}
 
+	// Trucks
+	for (int i = 2; i < 8; i++) {
+		if (i != 5) {
+			glPushMatrix();
+			glTranslatef((i * 3.92) - 20.3, 0.0, 48.0);
+			glRotatef(180, 0, 1, 0);
+			drawTruck();
+			glPopMatrix();
+		}
+	}
+
+	for (int i = 1; i < 7; i++) {
+		if (i != 3) {
+			glPushMatrix();
+			glTranslatef((i * 3.92) + 19.65, 0.0, 48.0);
+			glRotatef(180, 0, 1, 0);
+			drawTruck();
+			glPopMatrix();
+		}
+	}
+
+	// Light Post
 	for (int i = 0; i < 5; i++) {
 		drawPost((i * 20.0) - 25.0, 0.0, -29.0);
 	}
 
+	// Skybox
 	drawSkybox(0.0, 0.0, 0.0, 120.0, 80.0, 120.0);
 }
 
@@ -1144,8 +1170,6 @@ void display() {
 		drawGrid();
 	}
 
-	glPushMatrix();
-
 	// Draw Container
 	if (attachedTo == CNT_SC) {
 		posCn[0] = posSc[0] + (0.095 * 5);
@@ -1175,7 +1199,25 @@ void display() {
 	drawStraddleCarrier(spHeight);
 	glPopMatrix();
 
-	glPopMatrix();
+	// Trucks
+	for (int i = 0; i < 3; i++) {
+		if (dirTrucks[i]) {
+			glPushMatrix();
+			glTranslatef(posTrucks[i][0], 0.0, posTrucks[i][1]);
+			glRotatef(180, 0, 1, 0);
+			drawTruck();
+			glPopMatrix();
+		}
+		else {
+			glPushMatrix();
+			glTranslatef(posTrucks[i][0] - 0.65, 0.0, posTrucks[i][1]);
+			drawTruck();
+			glPopMatrix();
+
+			// Container
+			drawCube(posTrucks[i][0] - 0.7, 0.41, posTrucks[i][1] + 0.95, 0.85, 0.82, 2.0, TX_CONT1, CO_CN1);
+		}
+	}
 
 	glPopMatrix();
 	glutSwapBuffers();
@@ -1323,6 +1365,23 @@ void mouse(int x, int y) {
 }
 
 void timer(int x) {
+	for (int i = 0; i < 3; i++) {
+		if (dirTrucks[i]) {
+			posTrucks[i][1] -= 0.2;
+
+			if (posTrucks[i][1] < -20) {
+				dirTrucks[i] = false;
+			}
+		}
+		else {
+			posTrucks[i][1] += 0.2;
+
+			if (posTrucks[i][1] > 45) {
+				dirTrucks[i] = true;
+			}
+		}
+	}
+
 	glutPostRedisplay();
 	glutTimerFunc(60, timer, 1);
 }
@@ -1375,6 +1434,7 @@ void changeSize(GLsizei w, GLsizei h) {
 int main(int argc, char** argv) {
 	srand(time(NULL));
 
+	// Container Stacks
 	for (int i = 0; i < 44; i++) {
 		stack1[i] = CStacks[rand() % 14];
 		stack2[i] = CStacks[rand() % 14];
@@ -1383,6 +1443,21 @@ int main(int argc, char** argv) {
 	for (int i = 44; i < 100; i++) {
 		stack2[i] = CStacks[rand() % 14];
 	}
+
+	// Trucks
+	for (int i = 0; i < 3; i++) {
+		dirTrucks[i] = (rand() % 2 == 0);
+
+		if (dirTrucks[i]) {
+			posTrucks[i][1] = rand() % 30;
+		}
+		else {
+			posTrucks[i][1] = -(rand() % 20);
+		}
+	}
+	posTrucks[0][0] = -16.38;
+	posTrucks[1][0] = 31.41;
+	posTrucks[2][0] = 47.09;
 
 	glutInit(&argc, argv);
 
