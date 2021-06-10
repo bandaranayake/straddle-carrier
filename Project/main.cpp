@@ -7,11 +7,15 @@
 #include <GL/glut.h>
 
 #define PI 3.1415927
-#define TEXTURE_COUNT 18
+#define TEXTURE_COUNT 38
 #define SPREADER_LOWER_LIMIT 0.0
 #define SPREADER_UPPER_LIMIT 0.5
 
-#define C_NONE 0
+#define CNT_NONE 0
+#define CNT_SC 1
+#define CNT_CT 2
+
+#define NONE 0
 #define STRADLE_CARRIER 1
 #define CONTAINER_TRUCK 2
 
@@ -25,14 +29,40 @@
 #define TX_TRUCK_FRONT1 7
 #define TX_TRUCK_FRONT2 8
 #define TX_TRUCK_BODY 9
-#define TX_CONT_FRONT 10
-#define TX_CONT_BACK 11
-#define TX_CONT_SIDE 12
-#define TX_FLOOR 13
-#define TX_WATER 14
-#define TX_SKY 15
-#define TX_CONT_STACKF 16
-#define TX_CONT_STACKB 17
+#define TX_CONT1 10
+#define TX_CONT2 11
+#define TX_CONT3 12
+#define TX_FLOOR1 13
+#define SKYBOX_TOP 14
+#define SKYBOX_DOWN 15
+#define TX_CONT4 16
+#define TX_CONT5 17
+#define TX_WALL1 18
+#define TX_WALL2 19
+#define TX_WALL3 20
+#define TX_ROOF 21
+#define TX_CEILING 22
+#define TX_FLOOR2 23
+#define TX_CONT6 24
+#define TX_CONT7 25
+#define TX_CONT8 26
+#define TX_CONT9 27
+#define TX_CONT10 28
+#define TX_CONT11 29
+#define TX_CONT12 30
+#define TX_CONT13 31
+#define TX_CONT14 32
+#define TX_CONT15 33
+#define SKYBOX_FRONT 34
+#define SKYBOX_BACK 35
+#define SKYBOX_LEFT 36
+#define SKYBOX_RIGHT 37
+
+#define CAMERA_RAD 3.5
+
+#define CO_CN1 0
+#define CO_CN2 1
+#define CO_SKYBOX 2
 
 using namespace std;
 
@@ -43,49 +73,55 @@ struct BitMapFile
 	unsigned char* data;
 };
 
-GLfloat moveX = 2.0f;
-GLfloat moveY = 0.0f;
-GLfloat moveZ = -14.0f;
-
 GLfloat rotX = 0.0f;
-GLfloat rotY = 54.0f;
-GLfloat rotZ = 0.0f;
+GLfloat rotY = 3.13f;
 
-GLfloat camY = 5.5f;
-GLfloat camX = 0.0f;
-GLfloat camZ = 0.0f;
+GLfloat posCam[3];
+GLfloat posCenter[3];
 
-GLfloat scX = -9.0f;
-GLfloat scZ = -10.0f;
-GLfloat ctX = -12.0f;
-GLfloat ctZ = -9.0f;
-GLfloat cnX = -9.0f;
-GLfloat cnY = 0.0f;
-GLfloat cnZ = 3.0f;
+GLfloat posSc[] = { -0.9f, 0.0f, -14.0f };
+GLfloat posCt[] = { -0.7f, 0.0f, 48.0f };
+GLfloat posCn[] = { -0.45f, 0.0f, 3.0f };
+
+GLfloat posTrucks[3][2];
+bool dirTrucks[3];
 
 GLfloat spHeight = 0.0;
 
-int attachedTo = C_NONE;
-int onUse = STRADLE_CARRIER;
+static GLfloat coordinates[2][6][8] = {
+	{
+		{0.858, 0.650246, 0.142, 0.650246, 0.142, 0.35468, 0.858, 0.35468},
+		{0.858, 0.650246, 0.858, 0.35468, 0.142, 0.35468, 0.142, 0.650246},
+		{0.0, 0.35468, 0.0, 0.650246, 0.142, 0.650246, 0.142, 0.35468},
+		{0.858, 0.650246, 1.0, 0.650246, 1.0, 0.35468, 0.858, 0.35468},
+		{0.858, 1.0, 0.142, 1.0, 0.142, 0.650246, 0.858, 0.650246},
+		{0.858, 0.0, 0.858, 0.35468, 0.142, 0.35468, 0.142, 0.0}
+	},
+	{
+		{0.774, 0.668657, 0.22, 0.668657, 0.22, 0.334328, 0.774, 0.334328},
+		{0.774, 0.668657, 0.774, 0.334328, 0.22, 0.334328,  0.22, 0.668657},
+		{0.0, 0.668657, 0.0, 0.334328, 0.22, 0.334328, 0.22, 0.668657},
+		{1.0, 0.668657, 0.774, 0.668657, 0.774, 0.334328, 1.0, 0.334328},
+		{0.774, 1.0, 0.22, 1.0, 0.22, 0.668657, 0.774, 0.668657},
+		{0.774, 0.0, 0.774, 0.334328, 0.22, 0.334328, 0.22, 0.0}
+	}
+};
 
-int tx_stack1[] = { TX_CONT_STACKF, TX_CONT_STACKF, TX_CONT_STACKF, TX_CONT_STACKB, TX_CONT_STACKB, TX_CONT_STACKF };
-int tx_stack2[] = { TX_CONT_STACKB, TX_CONT_STACKB, TX_CONT_STACKB, TX_CONT_STACKF, TX_CONT_STACKF, TX_CONT_STACKB };
-int tx_stackTop[4][10];
-int tx_stackBottom[4][10];
-
-int vehicleType[5];
-bool vehicleTurn[5];
-GLfloat vehicleZ[5];
+int attachedTo = CNT_NONE;
+int active = STRADLE_CARRIER;
+int winId, winW, winH;
 
 bool showWireframe = false;
 bool showAxes = false;
 bool showGrid = false;
 
 static unsigned int texture[TEXTURE_COUNT];
+static unsigned int CStacks[15] = { TX_CONT2, TX_CONT3, TX_CONT4, TX_CONT5, TX_CONT6, TX_CONT7, TX_CONT8,
+								TX_CONT9, TX_CONT10, TX_CONT11, TX_CONT12, TX_CONT13, TX_CONT14, TX_CONT15 };
+unsigned int stack1[44];
+unsigned int stack2[100];
 
-
-BitMapFile* getbmp(string filename)
-{
+BitMapFile* getbmp(string filename) {
 	int offset, headerSize;
 
 	BitMapFile* bmpRGB = new BitMapFile;
@@ -137,8 +173,7 @@ BitMapFile* getbmp(string filename)
 	return bmpRGBA;
 }
 
-void loadExternalTextures()
-{
+void loadExternalTextures() {
 	BitMapFile* image[TEXTURE_COUNT];
 	image[TX_METAL_RED] = getbmp("textures/metal_red.bmp");
 	image[TX_METAL_GRAY] = getbmp("textures/metal_gray.bmp");
@@ -150,14 +185,34 @@ void loadExternalTextures()
 	image[TX_TRUCK_FRONT2] = getbmp("textures/truck_front_bottom.bmp");
 	image[TX_TRUCK_BODY] = getbmp("textures/truck_body.bmp");
 	image[TX_GLASS_TRUCK] = getbmp("textures/truck_glass.bmp");
-	image[TX_CONT_FRONT] = getbmp("textures/container_front.bmp");
-	image[TX_CONT_BACK] = getbmp("textures/container_back.bmp");
-	image[TX_CONT_SIDE] = getbmp("textures/container_side.bmp");
-	image[TX_FLOOR] = getbmp("textures/floor.bmp");
-	image[TX_WATER] = getbmp("textures/water.bmp");
-	image[TX_SKY] = getbmp("textures/sky.bmp");
-	image[TX_CONT_STACKF] = getbmp("textures/container_stack_f.bmp");
-	image[TX_CONT_STACKB] = getbmp("textures/container_stack_b.bmp");
+	image[TX_FLOOR1] = getbmp("textures/floor1.bmp");
+	image[TX_FLOOR2] = getbmp("textures/floor2.bmp");
+	image[TX_WALL1] = getbmp("textures/wall1.bmp");
+	image[TX_WALL2] = getbmp("textures/wall2.bmp");
+	image[TX_WALL3] = getbmp("textures/wall3.bmp");
+	image[TX_ROOF] = getbmp("textures/roof.bmp");
+	image[TX_CEILING] = getbmp("textures/ceiling.bmp");
+	image[TX_CONT1] = getbmp("textures/container1.bmp");
+	image[TX_CONT2] = getbmp("textures/container2.bmp");
+	image[TX_CONT3] = getbmp("textures/container3.bmp");
+	image[TX_CONT4] = getbmp("textures/container4.bmp");
+	image[TX_CONT5] = getbmp("textures/container5.bmp");
+	image[TX_CONT6] = getbmp("textures/container6.bmp");
+	image[TX_CONT7] = getbmp("textures/container7.bmp");
+	image[TX_CONT8] = getbmp("textures/container8.bmp");
+	image[TX_CONT9] = getbmp("textures/container9.bmp");
+	image[TX_CONT10] = getbmp("textures/container10.bmp");
+	image[TX_CONT11] = getbmp("textures/container11.bmp");
+	image[TX_CONT12] = getbmp("textures/container12.bmp");
+	image[TX_CONT13] = getbmp("textures/container13.bmp");
+	image[TX_CONT14] = getbmp("textures/container14.bmp");
+	image[TX_CONT15] = getbmp("textures/container15.bmp");
+	image[SKYBOX_TOP] = getbmp("textures/skybox_top.bmp");
+	image[SKYBOX_DOWN] = getbmp("textures/skybox_down.bmp");
+	image[SKYBOX_FRONT] = getbmp("textures/skybox_front.bmp");
+	image[SKYBOX_BACK] = getbmp("textures/skybox_back.bmp");
+	image[SKYBOX_LEFT] = getbmp("textures/skybox_left.bmp");
+	image[SKYBOX_RIGHT] = getbmp("textures/skybox_right.bmp");
 
 	for (int i = 0; i < TEXTURE_COUNT; i++) {
 		glBindTexture(GL_TEXTURE_2D, texture[i]);
@@ -268,6 +323,66 @@ void drawCube(GLfloat x, GLfloat y, GLfloat z, GLfloat w, GLfloat h, GLfloat l, 
 	glDisable(GL_TEXTURE_2D);
 }
 
+void drawCube(GLfloat x, GLfloat y, GLfloat z, GLfloat w, GLfloat h, GLfloat l, int tx, int co) {
+	glEnable(GL_TEXTURE_2D);
+
+	// TOP
+	glBindTexture(GL_TEXTURE_2D, texture[tx]);
+	glBegin(GL_QUADS);
+	glTexCoord2f(coordinates[co][0][0], coordinates[co][0][1]); glVertex3f(x, y + h, z);
+	glTexCoord2f(coordinates[co][0][2], coordinates[co][0][3]); glVertex3f(x, y + h, z + l);
+	glTexCoord2f(coordinates[co][0][4], coordinates[co][0][5]); glVertex3f(x + w, y + h, z + l);
+	glTexCoord2f(coordinates[co][0][6], coordinates[co][0][7]); glVertex3f(x + w, y + h, z);
+	glEnd();
+
+	// BOTTOM
+	glBindTexture(GL_TEXTURE_2D, texture[tx]);
+	glBegin(GL_QUADS);
+	glTexCoord2f(coordinates[co][1][0], coordinates[co][1][1]); glVertex3f(x, y, z);
+	glTexCoord2f(coordinates[co][1][2], coordinates[co][1][3]); glVertex3f(x + w, y, z);
+	glTexCoord2f(coordinates[co][1][4], coordinates[co][1][5]); glVertex3f(x + w, y, z + l);
+	glTexCoord2f(coordinates[co][1][6], coordinates[co][1][7]); glVertex3f(x, y, z + l);
+	glEnd();
+
+	// FRONT
+	glBindTexture(GL_TEXTURE_2D, texture[tx]);
+	glBegin(GL_QUADS);
+	glTexCoord2f(coordinates[co][2][0], coordinates[co][2][1]); glVertex3f(x, y, z + l);
+	glTexCoord2f(coordinates[co][2][2], coordinates[co][2][3]); glVertex3f(x + w, y, z + l);
+	glTexCoord2f(coordinates[co][2][4], coordinates[co][2][5]); glVertex3f(x + w, y + h, z + l);
+	glTexCoord2f(coordinates[co][2][6], coordinates[co][2][7]); glVertex3f(x, y + h, z + l);
+	glEnd();
+
+	// BACK
+	glBindTexture(GL_TEXTURE_2D, texture[tx]);
+	glBegin(GL_QUADS);
+	glTexCoord2f(coordinates[co][3][0], coordinates[co][3][1]); glVertex3f(x, y, z);
+	glTexCoord2f(coordinates[co][3][2], coordinates[co][3][3]); glVertex3f(x, y + h, z);
+	glTexCoord2f(coordinates[co][3][4], coordinates[co][3][5]); glVertex3f(x + w, y + h, z);
+	glTexCoord2f(coordinates[co][3][6], coordinates[co][3][7]); glVertex3f(x + w, y, z);
+	glEnd();
+
+	// LEFT
+	glBindTexture(GL_TEXTURE_2D, texture[tx]);
+	glBegin(GL_QUADS);
+	glTexCoord2f(coordinates[co][4][0], coordinates[co][4][1]); glVertex3f(x, y, z);
+	glTexCoord2f(coordinates[co][4][2], coordinates[co][4][3]); glVertex3f(x, y, z + l);
+	glTexCoord2f(coordinates[co][4][4], coordinates[co][4][5]); glVertex3f(x, y + h, z + l);
+	glTexCoord2f(coordinates[co][4][6], coordinates[co][4][7]); glVertex3f(x, y + h, z);
+	glEnd();
+
+	// RIGHT
+	glBindTexture(GL_TEXTURE_2D, texture[tx]);
+	glBegin(GL_QUADS);
+	glTexCoord2f(coordinates[co][5][0], coordinates[co][5][1]); glVertex3f(x + w, y, z);
+	glTexCoord2f(coordinates[co][5][2], coordinates[co][5][3]); glVertex3f(x + w, y + h, z);
+	glTexCoord2f(coordinates[co][5][4], coordinates[co][5][5]); glVertex3f(x + w, y + h, z + l);
+	glTexCoord2f(coordinates[co][5][6], coordinates[co][5][7]); glVertex3f(x + w, y, z + l);
+	glEnd();
+
+	glDisable(GL_TEXTURE_2D);
+}
+
 void drawCylinder(GLfloat radius, GLfloat height, int tx[]) {
 	GLfloat y = 0.0, z = 0.0;
 	GLfloat txX = 0.0, txY = 0.0;
@@ -324,30 +439,6 @@ void drawCylinder(GLfloat radius, GLfloat height, int tx[]) {
 	glVertex3f(height, 0.0, radius);
 	glEnd();
 
-	glDisable(GL_TEXTURE_2D);
-}
-
-void drawBackground(GLfloat radius, GLfloat height, int TX) {
-	GLfloat y = 0.0, z = 0.0;
-	GLfloat angle_stepsize = 0.1;
-
-	glEnable(GL_TEXTURE_2D);
-	glBindTexture(GL_TEXTURE_2D, texture[TX]);
-	glBegin(GL_QUAD_STRIP);
-	for (GLfloat i = 2 * PI; i >= 0; i -= 0.1)
-	{
-		const float tc = (i / (float)(2 * PI));
-		glTexCoord2f(tc, 0.0);
-		glVertex3f(radius * cos(i), 0, radius * sin(i));
-		glTexCoord2f(tc, 1.0);
-		glVertex3f(radius * cos(i), height, radius * sin(i));
-	}
-
-	glTexCoord2f(0.0, 0.0);
-	glVertex3f(radius, 0, 0);
-	glTexCoord2f(0.0, 1.0);
-	glVertex3f(radius, height, 0);
-	glEnd();
 	glDisable(GL_TEXTURE_2D);
 }
 
@@ -441,12 +532,7 @@ void drawCabin() {
 	glDisable(GL_TEXTURE_2D);
 }
 
-void drawContainer(GLfloat width, GLfloat height, GLfloat length) {
-	int tx_Container[] = { TX_CONT_SIDE, TX_CONT_SIDE, TX_CONT_FRONT, TX_CONT_BACK, TX_CONT_SIDE, TX_CONT_SIDE };
-	drawCube(0.0, 0.065, 0.0, width, height, length, tx_Container);
-}
-
-void drawStraddleCarrier(GLfloat spreaderHeight, bool attached) {
+void drawStraddleCarrier(GLfloat spreaderHeight) {
 	int tx_Body[] = { TX_METAL_RED, TX_METAL_RED, TX_METAL_RED, TX_METAL_RED, TX_METAL_RED, TX_METAL_RED };
 	int tx_Wheel[] = { TX_TYRE, TX_WHEEL2, TX_WHEEL2 };
 	int tx_Chain[] = { TX_METAL_GRAY, TX_METAL_GRAY, TX_METAL_GRAY };
@@ -504,14 +590,6 @@ void drawStraddleCarrier(GLfloat spreaderHeight, bool attached) {
 	// SPREADER
 	drawCube(0.11, 0.635 - spreaderHeight, 0.11, 0.14, 0.02, 0.3, tx_Body);
 
-	// CONTAINER
-	if (attached) {
-		glPushMatrix();
-		glTranslatef(0.095, 0.406 - spreaderHeight, 0.06);
-		drawContainer(0.17, 0.164, 0.4);
-		glPopMatrix();
-	}
-
 	// SPREADER - CHAINS
 	glPushMatrix();
 	glTranslatef(0.12, 0.637 - spreaderHeight, 0.12);
@@ -540,7 +618,7 @@ void drawStraddleCarrier(GLfloat spreaderHeight, bool attached) {
 	glPopMatrix();
 }
 
-void drawTruck(bool attached) {
+void drawTruck() {
 	int tx_Body[] = { TX_TRUCK_BODY, TX_TRUCK_BODY, TX_TRUCK_BODY, TX_TRUCK_BODY, TX_TRUCK_BODY, TX_TRUCK_BODY };
 	int tx_Wheel[] = { TX_TYRE, TX_WHEEL1, TX_WHEEL1 };
 
@@ -548,14 +626,6 @@ void drawTruck(bool attached) {
 	glTranslatef(0.0, 0.18, 0.0);
 	// TRAILER - BASE
 	drawCube(0.05, 0.18, 0.9, 0.65, 0.05, 2.1, tx_Body);
-
-	// CONTAINER
-	if (attached) {
-		glPushMatrix();
-		glTranslatef(-0.05, 0.18, 0.95);
-		drawContainer(0.85, 0.82, 2.0);
-		glPopMatrix();
-	}
 
 	// TRAILER - WHEELS BACK (SIDE 1)
 	glPushMatrix();
@@ -700,139 +770,512 @@ void drawTruck(bool attached) {
 	glPopMatrix();
 }
 
-void drawEnv() {
+void drawWall(GLfloat x, GLfloat y, GLfloat z, GLfloat w, GLfloat h, GLfloat l, int tx) {
 	glEnable(GL_TEXTURE_2D);
-	glBindTexture(GL_TEXTURE_2D, texture[TX_FLOOR]);
+	glBindTexture(GL_TEXTURE_2D, texture[tx]);
 	glBegin(GL_QUADS);
 
-	GLfloat tmpY = -30;
-	for (int i = 0; i < 9; i++) {
-		GLfloat tmpX = -30;
+	// TOP
+	glTexCoord2f(0.0, 0.0); glVertex3f(x, y + h, z);
+	glTexCoord2f(1.0, 0.0); glVertex3f(x, y + h, z + l);
+	glTexCoord2f(1.0, 1.0); glVertex3f(x + w, y + h, z + l);
+	glTexCoord2f(0.0, 1.0); glVertex3f(x + w, y + h, z);
 
-		for (int j = 0; j < 9; j++) {
-			glTexCoord2f(0.0, 0.0); glVertex3f(tmpX, 0.0, tmpY);
-			glTexCoord2f(1.0, 0.0); glVertex3f(tmpX, 0.0, tmpY + 10);
-			glTexCoord2f(1.0, 1.0); glVertex3f(tmpX + 10, 0.0, tmpY + 10);
-			glTexCoord2f(0.0, 1.0); glVertex3f(tmpX + 10, 0.0, tmpY);
-			tmpX += 10;
+	// FRONT
+	glTexCoord2f(0.0, 0.0); glVertex3f(x, y, z + l);
+	glTexCoord2f(1.0, 0.0); glVertex3f(x + w, y, z + l);
+	glTexCoord2f(1.0, 1.0); glVertex3f(x + w, y + h, z + l);
+	glTexCoord2f(0.0, 1.0); glVertex3f(x, y + h, z + l);
+
+	// BACK
+	glTexCoord2f(0.0, 0.0); glVertex3f(x, y, z);
+	glTexCoord2f(0.0, 1.0); glVertex3f(x, y + h, z);
+	glTexCoord2f(1.0, 1.0); glVertex3f(x + w, y + h, z);
+	glTexCoord2f(1.0, 0.0); glVertex3f(x + w, y, z);
+
+	// LEFT
+	glTexCoord2f(0.0, 0.0); glVertex3f(x, y, z);
+	glTexCoord2f(1.0, 0.0); glVertex3f(x, y, z + l);
+	glTexCoord2f(1.0, 1.0); glVertex3f(x, y + h, z + l);
+	glTexCoord2f(0.0, 1.0); glVertex3f(x, y + h, z);
+
+	// RIGHT
+	glTexCoord2f(0.0, 0.0); glVertex3f(x + w, y, z);
+	glTexCoord2f(0.0, 1.0); glVertex3f(x + w, y + h, z);
+	glTexCoord2f(1.0, 1.0); glVertex3f(x + w, y + h, z + l);
+	glTexCoord2f(1.0, 0.0); glVertex3f(x + w, y, z + l);
+
+	glEnd();
+	glDisable(GL_TEXTURE_2D);
+}
+
+void drawWarehouse(GLfloat x, GLfloat y, GLfloat z, GLfloat w, GLfloat h, GLfloat l) {
+	int tx_wallF[] = { TX_WALL3, TX_WALL3, TX_WALL2, TX_WALL3, TX_WALL3, TX_WALL3 };
+	int tx_wallB[] = { TX_WALL3, TX_WALL3, TX_WALL3, TX_WALL2, TX_WALL3, TX_WALL3 };
+	int tx_wallR[] = { TX_WALL3, TX_WALL3, TX_WALL3, TX_WALL3, TX_WALL2, TX_WALL3 };
+	int tx_wallL[] = { TX_WALL3, TX_WALL3, TX_WALL3, TX_WALL3, TX_WALL3, TX_WALL2 };
+
+	drawCube(x + 0.3, y, z + l - 0.3, w - 0.6, h, 0.3, tx_wallB); // Back Wall
+	drawCube(x, y, z, 0.3, h, l, tx_wallL); // Left Wall
+	drawCube(x + w - 0.3, y, z, 0.3, h, l, tx_wallR); // Right Wall
+
+	// Front Wall
+	GLfloat tw = (w - 0.6) / 15;
+	GLfloat th1 = h * 0.25;
+	GLfloat th2 = h * 0.75;
+
+	for (int i = 0; i < 15; i++) {
+		if (i % 2 == 0) {
+			drawCube(x + (i * tw) + 0.3, y, z, tw, h, 0.3, tx_wallF);
 		}
-		tmpY += 10;
+		else {
+			drawCube(x + (i * tw) + 0.3, y + th2, z, tw, th1, 0.3, tx_wallF);
+		}
 	}
+
+	glEnable(GL_TEXTURE_2D);
+
+	// Left Top Wall
+	glBindTexture(GL_TEXTURE_2D, texture[TX_WALL2]);
+	glBegin(GL_TRIANGLES);
+	glTexCoord2f(0.0, 0.0); glVertex3f(x + 0.3, y + h, z);
+	glTexCoord2f(0.5, 0.0); glVertex3f(x + 0.3, y + h + 2.0, z + (l / 2));
+	glTexCoord2f(0.0, 1.0); glVertex3f(x + 0.3, y + h, z + l);
+
+	glTexCoord2f(0.0, 0.0); glVertex3f(x + w - 0.3, y + h, z + l);
+	glTexCoord2f(0.5, 0.0); glVertex3f(x + w - 0.3, y + h + 2.0, z + (l / 2));
+	glTexCoord2f(0.0, 1.0); glVertex3f(x + w - 0.3, y + h, z);
 	glEnd();
 
-	glBindTexture(GL_TEXTURE_2D, texture[TX_WATER]);
-	glBegin(GL_QUADS);
-	glTexCoord2f(0.0, 0.0); glVertex3f(-30.0, 0.0, -30.0);
-	glTexCoord2f(1.0, 0.0); glVertex3f(-60.0, 0.0, -30.0);
-	glTexCoord2f(1.0, 1.0); glVertex3f(-60.0, 0.0, 60.0);
-	glTexCoord2f(0.0, 1.0); glVertex3f(-30.0, 0.0, 60.0);
+	// Right Top Wall
+	glBindTexture(GL_TEXTURE_2D, texture[TX_WALL3]);
+	glBegin(GL_TRIANGLES);
+	glTexCoord2f(0.0, 0.0); glVertex3f(x + w, y + h, z);
+	glTexCoord2f(0.5, 0.0); glVertex3f(x + w, y + h + 2.0, z + (l / 2));
+	glTexCoord2f(0.0, 1.0); glVertex3f(x + w, y + h, z + l);
 
-	glTexCoord2f(1.0, 0.0); glVertex3f(-60.0, 0.0, -30.0);
-	glTexCoord2f(0.0, 1.0); glVertex3f(60.0, 0.0, -30.0);
-	glTexCoord2f(1.0, 1.0); glVertex3f(60.0, 0.0, -60.0);
-	glTexCoord2f(0.0, 0.0); glVertex3f(-60.0, 0.0, -60.0);
+	glTexCoord2f(0.0, 0.0); glVertex3f(x, y + h, z + l);
+	glTexCoord2f(0.5, 0.0); glVertex3f(x, y + h + 2.0, z + (l / 2));
+	glTexCoord2f(0.0, 1.0); glVertex3f(x, y + h, z);
+	glEnd();
+
+	glBindTexture(GL_TEXTURE_2D, texture[TX_ROOF]);
+	glBegin(GL_QUADS);
+	// Left Roof
+	glTexCoord2f(0.0, 0.0); glVertex3f(x, y + h, z);
+	glTexCoord2f(0.0, 10.0); glVertex3f(x, y + h + 2.0, z + (l / 2));
+	glTexCoord2f(10.0, 10.0); glVertex3f(x + w, y + h + 2.0, z + (l / 2));
+	glTexCoord2f(10.0, 0.0); glVertex3f(x + w, y + h, z);
+
+	// Right Roof
+	glTexCoord2f(0.0, 0.0); glVertex3f(x, y + h, z + l);
+	glTexCoord2f(10.0, 0.0); glVertex3f(x + w, y + h, z + l);
+	glTexCoord2f(10.0, 10.0); glVertex3f(x + w, y + h + 2.0, z + (l / 2));
+	glTexCoord2f(0.0, 10.0); glVertex3f(x, y + h + 2.0, z + (l / 2));
+	glEnd();
+
+	glBindTexture(GL_TEXTURE_2D, texture[TX_CEILING]);
+	glBegin(GL_QUADS);
+	// Left Ceiling
+	glTexCoord2f(0.0, 0.0); glVertex3f(x, y + h, z);
+	glTexCoord2f(10.0, 0.0); glVertex3f(x + w, y + h, z);
+	glTexCoord2f(10.0, 10.0); glVertex3f(x + w, y + h + 2.0, z + (l / 2));
+	glTexCoord2f(0.0, 10.0); glVertex3f(x, y + h + 2.0, z + (l / 2));
+
+	// Right Ceiling
+	glTexCoord2f(0.0, 0.0); glVertex3f(x, y + h, z + l);
+	glTexCoord2f(0.0, 10.0); glVertex3f(x, y + h + 2.0, z + (l / 2));
+	glTexCoord2f(10.0, 10.0); glVertex3f(x + w, y + h + 2.0, z + (l / 2));
+	glTexCoord2f(10.0, 0.0); glVertex3f(x + w, y + h, z + l);
+	glEnd();
+
+	// Floor
+	glBindTexture(GL_TEXTURE_2D, texture[TX_FLOOR2]);
+	glBegin(GL_QUADS);
+	glTexCoord2f(0.0, 0.0); glVertex3f(x, y + 0.001, z);
+	glTexCoord2f(0.0, 20.0); glVertex3f(x, y + 0.001, z + l);
+	glTexCoord2f(20.0, 20.0); glVertex3f(x + w, y + 0.001, z + l);
+	glTexCoord2f(20.0, 0.0); glVertex3f(x + w, y + 0.001, z);
+	glEnd();
+
+	glDisable(GL_TEXTURE_2D);
+}
+
+void drawSkybox(GLfloat x, GLfloat y, GLfloat z, GLfloat w, GLfloat h, GLfloat l) {
+	x = x - w / 2;
+	y = y - h / 2;
+	z = z - l / 2;
+
+	glEnable(GL_TEXTURE_2D);
+
+	// TOP
+	glBindTexture(GL_TEXTURE_2D, texture[SKYBOX_TOP]);
+	glBegin(GL_QUADS);
+	glTexCoord2f(1.0, 1.0); glVertex3f(x, y + h, z);
+	glTexCoord2f(0.0, 1.0); glVertex3f(x + w, y + h, z);
+	glTexCoord2f(0.0, 0.0); glVertex3f(x + w, y + h, z + l);
+	glTexCoord2f(1.0, 0.0); glVertex3f(x, y + h, z + l);
+	glEnd();
+
+	// BOTTOM
+	glBindTexture(GL_TEXTURE_2D, texture[SKYBOX_DOWN]);
+	glBegin(GL_QUADS);
+	glTexCoord2f(1.0, 0.0); glVertex3f(x, y, z);
+	glTexCoord2f(1.0, 1.0); glVertex3f(x, y, z + l);
+	glTexCoord2f(0.0, 1.0); glVertex3f(x + w, y, z + l);
+	glTexCoord2f(0.0, 0.0); glVertex3f(x + w, y, z);
+	glEnd();
+
+	// FRONT
+	glBindTexture(GL_TEXTURE_2D, texture[SKYBOX_FRONT]);
+	glBegin(GL_QUADS);
+	glTexCoord2f(1.0, 0.0); glVertex3f(x, y, z + l);
+	glTexCoord2f(1.0, 1.0); glVertex3f(x, y + h, z + l);
+	glTexCoord2f(0.0, 1.0); glVertex3f(x + w, y + h, z + l);
+	glTexCoord2f(0.0, 0.0); glVertex3f(x + w, y, z + l);
+	glEnd();
+
+	// BACK
+	glBindTexture(GL_TEXTURE_2D, texture[SKYBOX_BACK]);
+	glBegin(GL_QUADS);
+	glTexCoord2f(0.0, 0.0); glVertex3f(x, y, z);
+	glTexCoord2f(1.0, 0.0); glVertex3f(x + w, y, z);
+	glTexCoord2f(1.0, 1.0); glVertex3f(x + w, y + h, z);
+	glTexCoord2f(0.0, 1.0); glVertex3f(x, y + h, z);
+	glEnd();
+
+	// LEFT
+	glBindTexture(GL_TEXTURE_2D, texture[SKYBOX_LEFT]);
+	glBegin(GL_QUADS);
+	glTexCoord2f(1.0, 0.0); glVertex3f(x, y, z);
+	glTexCoord2f(1.0, 1.0); glVertex3f(x, y + h, z);
+	glTexCoord2f(0.0, 1.0); glVertex3f(x, y + h, z + l);
+	glTexCoord2f(0.0, 0.0); glVertex3f(x, y, z + l);
+	glEnd();
+
+	// RIGHT
+	glBindTexture(GL_TEXTURE_2D, texture[SKYBOX_RIGHT]);
+	glBegin(GL_QUADS);
+	glTexCoord2f(0.0, 0.0); glVertex3f(x + w, y, z);
+	glTexCoord2f(1.0, 0.0); glVertex3f(x + w, y, z + l);
+	glTexCoord2f(1.0, 1.0); glVertex3f(x + w, y + h, z + l);
+	glTexCoord2f(0.0, 1.0); glVertex3f(x + w, y + h, z);
+	glEnd();
+
+	glDisable(GL_TEXTURE_2D);
+}
+
+void drawPost(GLfloat x, GLfloat y, GLfloat z) {
+	int tx_Post[] = { TX_METAL_GRAY, TX_METAL_GRAY, TX_METAL_GRAY };
+	int tx_PostTop[] = { TX_GLASS_CABIN, TX_WALL2, TX_GLASS_CABIN, TX_GLASS_CABIN, TX_GLASS_CABIN, TX_GLASS_CABIN };
+
+	glPushMatrix();
+	glTranslatef(x, y, z);
+
+	glPushMatrix();
+	glRotatef(90.0, 0.0, 0.0, 1.0);
+	drawCylinder(0.2, 6.0, tx_Post);
+	glPopMatrix();
+
+	glPushMatrix();
+	glTranslatef(0.0, 5.8, 0.0);
+	glRotatef(-90.0, 0.0, 1.0, 0.0);
+	glRotatef(15.0, 0.0, 0.0, 1.0);
+	drawCylinder(0.1, 2.0, tx_Post);
+	glPopMatrix();
+
+	glTranslatef(-0.6, 0.0, 1.85);
+	drawCube(0.0, 6.25, 0.0, 1.2, 0.1, 1.2, tx_PostTop);
+	glPopMatrix();
+}
+
+void drawEnv() {
+	// Floor
+	glEnable(GL_TEXTURE_2D);
+	glBindTexture(GL_TEXTURE_2D, texture[TX_FLOOR1]);
+	glBegin(GL_QUADS);
+
+	GLfloat tmpZ = -30;
+	GLfloat tmpX = -30;
+	for (int i = 0; i < 9; i++) {
+		for (int j = 0; j < 9; j++) {
+			glTexCoord2f(0.0, 0.0); glVertex3f(tmpX, 0.0, tmpZ);
+			glTexCoord2f(1.0, 0.0); glVertex3f(tmpX, 0.0, tmpZ + 10);
+			glTexCoord2f(1.0, 1.0); glVertex3f(tmpX + 10, 0.0, tmpZ + 10);
+			glTexCoord2f(0.0, 1.0); glVertex3f(tmpX + 10, 0.0, tmpZ);
+			tmpX += 10;
+		}
+		tmpZ += 10;
+		tmpX = -30;
+	}
 	glEnd();
 	glDisable(GL_TEXTURE_2D);
 
-	glPushMatrix();
-	glRotatef(-120, 0, 1, 0);
-	drawBackground(60.0, 15.0, TX_SKY);
-	glPopMatrix();
+	//Walls
+	tmpZ = -30;
+	for (int i = 0; i < 9; i++) {
+		drawWall(-30, 0.0, tmpZ, 0.5, 0.6, 10.0, TX_WALL1);
+		tmpZ += 10;
+	}
 
-	glPushMatrix();
-	glTranslatef(-25.0, 0.0, 0.0);
+	tmpX = -30;
+	for (int i = 0; i < 9; i++) {
+		drawWall(tmpX, 0.0, -30, 10.0, 0.6, 0.5, TX_WALL1);
+		tmpX += 10;
+	}
 
-	for (int j = 0; j < 4; j++) {
-		for (int i = 0; i < 10; i++) {
-			drawCube(i * 6.8, 0, 30 - (j * 16), 3.4, 2.46, 8, (tx_stackBottom[j][i] == 0) ? tx_stack1 : tx_stack2);
-			if (tx_stackBottom[j][i] != 2) {
-				drawCube(i * 6.8, 2.46, 30 - (j * 16), 3.4, 2.46, 8, (tx_stackTop[j][i] == 0) ? tx_stack2 : tx_stack1);
-			}
+	drawWall(-30, 0.0, 59.8, 90.0, 3.2, 0.2, TX_WALL1);
+
+	// Warehouses
+	drawWarehouse(-20.0, 0.0, 44.5, 30.0, 3.0, 15.0);
+	drawWarehouse(20.0, 0.0, 44.5, 30.0, 3.0, 15.0);
+
+	// Container Stacks
+	for (int i = 0; i < 44; i++) {
+		drawCube(58.3, 0.0, 57.88 - (i * 2.0), 1.7, 1.64, 2.0, stack1[i], CO_CN2);
+		drawCube(58.3, 1.64, 57.88 - (i * 2.0), 1.7, 1.64, 2.0, stack1[43 - i], CO_CN2);
+	}
+
+	for (int i = 0; i < 4; i++) {
+		for (int j = 0; j < 25; j++) {
+			int t = (i * 25) + j;
+			drawCube(40.0 - (16 * i), 0.0, 28 - (j * 2.0), 1.7, 1.64, 2.0, stack2[t], CO_CN2);
+			drawCube(40.0 - (16 * i), 1.64, 28 - (j * 2.0), 1.7, 1.64, 2.0, stack2[99 - t], CO_CN2);
+
+			drawCube(38.3 - (16 * i), 0.0, 28 - (j * 2.0), 1.7, 1.64, 2.0, stack2[t], CO_CN2);
+			drawCube(38.3 - (16 * i), 1.64, 28 - (j * 2.0), 1.7, 1.64, 2.0, stack2[99 - t], CO_CN2);
 		}
 	}
 
-	glPopMatrix();
+	// Trucks
+	for (int i = 2; i < 8; i++) {
+		if (i != 5) {
+			glPushMatrix();
+			glTranslatef((i * 3.92) - 20.3, 0.0, 48.0);
+			glRotatef(180, 0, 1, 0);
+			drawTruck();
+			glPopMatrix();
+		}
+	}
+
+	for (int i = 1; i < 7; i++) {
+		if (i != 3) {
+			glPushMatrix();
+			glTranslatef((i * 3.92) + 19.65, 0.0, 48.0);
+			glRotatef(180, 0, 1, 0);
+			drawTruck();
+			glPopMatrix();
+		}
+	}
+
+	// Light Post
+	for (int i = 0; i < 5; i++) {
+		drawPost((i * 20.0) - 25.0, 0.0, -29.0);
+	}
+
+	// Skybox
+	drawSkybox(0.0, 0.0, 0.0, 120.0, 80.0, 120.0);
+}
+
+void initLighting() {
+	GLfloat L_Ambient[] = { 1.0, 1.0, 0.15, 1.0 };
+	GLfloat L_Diffuse[] = { 1.0, 1.0, 1.0, 1.0 };
+	GLfloat L_Specular[] = { 1.0, 1.0, 1.0, 1.0 };
+	GLfloat L_SpotDirection[] = { 0.0, -1.0, 1.0 };
+
+	GLfloat L0_Postion[] = { -25.0, 6.0, -26.0, 1.0 };
+	GLfloat L1_Postion[] = { -5.0, 6.0, -26.0, 1.0 };
+	GLfloat L2_Postion[] = { 15.0, 6.0, -26.0, 1.0 };
+	GLfloat L3_Postion[] = { 35.0, 6.0, -26.0, 1.0 };
+	GLfloat L4_Postion[] = { 55.0, 6.0, -26.0, 1.0 };
+
+	glLightfv(GL_LIGHT0, GL_AMBIENT, L_Ambient);
+	glLightfv(GL_LIGHT0, GL_DIFFUSE, L_Diffuse);
+	glLightfv(GL_LIGHT0, GL_SPECULAR, L_Specular);
+	glLightfv(GL_LIGHT0, GL_POSITION, L0_Postion);
+	glLightfv(GL_LIGHT0, GL_SPOT_DIRECTION, L_SpotDirection);
+	glLightf(GL_LIGHT0, GL_SPOT_CUTOFF, 60);
+
+	glLightfv(GL_LIGHT1, GL_AMBIENT, L_Ambient);
+	glLightfv(GL_LIGHT1, GL_DIFFUSE, L_Diffuse);
+	glLightfv(GL_LIGHT1, GL_SPECULAR, L_Specular);
+	glLightfv(GL_LIGHT1, GL_POSITION, L1_Postion);
+	glLightfv(GL_LIGHT1, GL_SPOT_DIRECTION, L_SpotDirection);
+	glLightf(GL_LIGHT1, GL_SPOT_CUTOFF, 60);
+
+	glLightfv(GL_LIGHT2, GL_AMBIENT, L_Ambient);
+	glLightfv(GL_LIGHT2, GL_DIFFUSE, L_Diffuse);
+	glLightfv(GL_LIGHT2, GL_SPECULAR, L_Specular);
+	glLightfv(GL_LIGHT2, GL_POSITION, L2_Postion);
+	glLightfv(GL_LIGHT2, GL_SPOT_DIRECTION, L_SpotDirection);
+	glLightf(GL_LIGHT2, GL_SPOT_CUTOFF, 60);
+
+	glLightfv(GL_LIGHT3, GL_AMBIENT, L_Ambient);
+	glLightfv(GL_LIGHT3, GL_DIFFUSE, L_Diffuse);
+	glLightfv(GL_LIGHT3, GL_SPECULAR, L_Specular);
+	glLightfv(GL_LIGHT3, GL_POSITION, L3_Postion);
+	glLightfv(GL_LIGHT3, GL_SPOT_DIRECTION, L_SpotDirection);
+	glLightf(GL_LIGHT3, GL_SPOT_CUTOFF, 60);
+
+	glLightfv(GL_LIGHT4, GL_AMBIENT, L_Ambient);
+	glLightfv(GL_LIGHT4, GL_DIFFUSE, L_Diffuse);
+	glLightfv(GL_LIGHT4, GL_SPECULAR, L_Specular);
+	glLightfv(GL_LIGHT4, GL_POSITION, L4_Postion);
+	glLightfv(GL_LIGHT4, GL_SPOT_DIRECTION, L_SpotDirection);
+	glLightf(GL_LIGHT4, GL_SPOT_CUTOFF, 60);
 }
 
 void display() {
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 	glPushMatrix();
 
-	gluLookAt(0.0 + camX, 2.0 + camY, 5.0 + camZ, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0);
+	// Camera
+	if (active == STRADLE_CARRIER) {
+		posCenter[0] = posSc[0] + 0.9;
+		posCenter[1] = 1.0;
+		posCenter[2] = posSc[2] + 1.6;
+	}
+	else if (active == CONTAINER_TRUCK) {
+		posCenter[0] = posCt[0] - 0.375;
+		posCenter[1] = 1.0;
+		posCenter[2] = posCt[2] - 2.3;
+	}
 
-	glTranslatef(moveX, moveY, moveZ);
-	glRotatef(rotX, 1.0f, 0.0f, 0.0f);
-	glRotatef(rotY, 0.0f, 1.0f, 0.0f);
-	glRotatef(rotZ, 0.0f, 0.0f, 1.0f);
+	if (active == NONE) {
+		gluLookAt(0.0, 2.0 + (rotX * 5), 5.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0);
 
+		glTranslatef(posCam[0], 0.0, posCam[2]);
+		glRotatef(rotY * 30, 0.0f, 1.0f, 0.0f);
+	}
+	else {
+		GLfloat camX = posCenter[0] + (CAMERA_RAD * sin(rotY));
+		GLfloat camY = 2.0 + rotX;
+		GLfloat camZ;
+
+		if (active == STRADLE_CARRIER) {
+			camZ = posCenter[2] + (CAMERA_RAD * cos(rotY));
+		}
+		else {
+			camZ = posCenter[2] - (CAMERA_RAD * cos(rotY));
+		}
+
+		gluLookAt(camX, camY, camZ, posCenter[0], posCenter[1], posCenter[2], 0.0, 1.0, 0.0);
+	}
+
+	initLighting();
+
+	// Draw environment
 	drawEnv();
 
+	// Draw axes
 	if (showAxes) {
 		drawAxes();
 	}
 
+	// Draw grid
 	if (showGrid) {
 		drawGrid();
 	}
 
-	glPushMatrix();
-	glRotatef(90.0, 0, 1, 0);
-
-	if (attachedTo == C_NONE) {
-		glPushMatrix();
-		glTranslatef(cnX, cnY, cnZ);
-		drawContainer(0.85, 0.82, 2.0);
-		glPopMatrix();
+	// Draw Container
+	if (attachedTo == CNT_SC) {
+		posCn[0] = posSc[0] + 1.325;
+		posCn[1] = posSc[1] - (spHeight * 5) + 2.68;
+		posCn[2] = posSc[2] + 2.3;
 	}
-	else if (attachedTo == STRADLE_CARRIER) {
-		cnX = scX + (0.095 * 5);
-		cnZ = scZ + (0.06 * 5);
+	else if (attachedTo == CNT_CT) {
+		posCn[0] = posCt[0] + 0.05;
+		posCn[1] = posCt[1] + 0.41;
+		posCn[2] = posCt[2] - 0.95;
 	}
 
 	glPushMatrix();
-	glTranslatef(ctX, 0.0, ctZ);
-	drawTruck(attachedTo == CONTAINER_TRUCK);
+	glTranslatef(posCn[0], posCn[1], posCn[2]);
+	glRotatef(180, 0, 1, 0);
+	drawCube(0.0, 0.0, 0.0, 0.85, 0.82, 2.0, TX_CONT1, CO_CN1);
 	glPopMatrix();
 
+	// Draw Truck
 	glPushMatrix();
-	glTranslatef(scX, 0.0, scZ);
+	glTranslatef(posCt[0], 0.0, posCt[2]);
+	glRotatef(180, 0, 1, 0);
+	drawTruck();
+	glPopMatrix();
+
+	// Draw Straddle Carrier
+	glPushMatrix();
+	glTranslatef(posSc[0], posSc[1], posSc[2]);
 	glScalef(5.0, 5.0, 5.0);
-	drawStraddleCarrier(spHeight, attachedTo == STRADLE_CARRIER);
+	drawStraddleCarrier(spHeight);
 	glPopMatrix();
 
-	glPopMatrix();
-
-	for (int i = 0; i < 5; i++) {
-		glPushMatrix();
-
-		if (vehicleTurn[i]) {
-			glTranslatef(0.8 + (i * 6.8), 0.0, vehicleZ[i]);
-			glRotatef(180.0, 0, 1, 0);
+	// Trucks
+	for (int i = 0; i < 3; i++) {
+		if (dirTrucks[i]) {
+			glPushMatrix();
+			glTranslatef(posTrucks[i][0], 0.0, posTrucks[i][1]);
+			glRotatef(180, 0, 1, 0);
+			drawTruck();
+			glPopMatrix();
 		}
 		else {
-			glTranslatef(i * 6.8, 0.0, vehicleZ[i]);
-		}
+			glPushMatrix();
+			glTranslatef(posTrucks[i][0] - 0.65, 0.0, posTrucks[i][1]);
+			drawTruck();
+			glPopMatrix();
 
-		if (vehicleType[i] == 0) {
-			drawTruck(true);
+			// Container
+			drawCube(posTrucks[i][0] - 0.7, 0.41, posTrucks[i][1] + 0.95, 0.85, 0.82, 2.0, TX_CONT1, CO_CN1);
 		}
-		else if (vehicleType[i] == 1) {
-			drawTruck(false);
-		}
-		else if (vehicleType[i] == 2) {
-			glScalef(5.0, 5.0, 5.0);
-			drawStraddleCarrier(0.0, true);
-		}
-		else {
-			glScalef(5.0, 5.0, 5.0);
-			drawStraddleCarrier(0.0, false);
-		}
-
-		glPopMatrix();
 	}
 
 	glPopMatrix();
 	glutSwapBuffers();
+}
+
+void handleKeyPress(unsigned char key) {
+	if (active == NONE) {
+		if (key == GLUT_KEY_UP) {
+			posCam[2] += 1.0;
+		}
+		else if (key == GLUT_KEY_DOWN) {
+			posCam[2] -= 1.0;
+		}
+		else if (key == GLUT_KEY_LEFT) {
+			posCam[0] += 1.0;
+		}
+		else if (key == GLUT_KEY_RIGHT) {
+			posCam[0] -= 1.0;
+		}
+	}
+	else if (active == STRADLE_CARRIER) {
+		if (key == GLUT_KEY_UP) {
+			posSc[2] += 0.1;
+		}
+		else if (key == GLUT_KEY_DOWN) {
+			posSc[2] -= 0.1;
+		}
+		else if (key == GLUT_KEY_LEFT) {
+			posSc[0] += 0.1;
+		}
+		else if (key == GLUT_KEY_RIGHT) {
+			posSc[0] -= 0.1;
+		}
+	}
+	else if (active == CONTAINER_TRUCK) {
+		if (key == GLUT_KEY_UP) {
+			posCt[2] -= 0.2;
+		}
+		else if (key == GLUT_KEY_DOWN) {
+			posCt[2] += 0.2;
+		}
+		else if (key == GLUT_KEY_LEFT) {
+			posCt[0] -= 0.2;
+		}
+		else if (key == GLUT_KEY_RIGHT) {
+			posCt[0] += 0.2;
+		}
+	}
 }
 
 void keyboardSpecial(int key, int x, int y) {
@@ -843,108 +1286,81 @@ void keyboardSpecial(int key, int x, int y) {
 		showGrid = !showGrid;
 	}
 	else if (key == GLUT_KEY_F3) {
-		if (showWireframe)
+		if (showWireframe) {
 			glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
-		else
+		}
+		else {
 			glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+		}
 		showWireframe = !showWireframe;
 	}
-	else if (onUse == STRADLE_CARRIER) {
-		if (key == GLUT_KEY_UP) {
-			scZ += 0.1;
-		}
-		else if (key == GLUT_KEY_DOWN) {
-			scZ -= 0.1;
-		}
-		else if (key == GLUT_KEY_LEFT) {
-			scX += 0.1;
-		}
-		else if (key == GLUT_KEY_RIGHT) {
-			scX -= 0.1;
-		}
-		else if (key == GLUT_KEY_PAGE_DOWN) {
-			if (SPREADER_UPPER_LIMIT > spHeight) spHeight += 0.01;
-		}
-		else if (key == GLUT_KEY_PAGE_UP) {
-			if (SPREADER_LOWER_LIMIT < spHeight) spHeight -= 0.01;
+	else if (key == GLUT_KEY_PAGE_DOWN) {
+		if (active == STRADLE_CARRIER && SPREADER_UPPER_LIMIT > spHeight) {
+			spHeight += 0.01;
 		}
 	}
-	else if (onUse == CONTAINER_TRUCK) {
-		if (key == GLUT_KEY_UP) {
-			ctZ += 0.2;
-		}
-		else if (key == GLUT_KEY_DOWN) {
-			ctZ -= 0.2;
-		}
-		else if (key == GLUT_KEY_LEFT) {
-			ctX += 0.2;
-		}
-		else if (key == GLUT_KEY_RIGHT) {
-			ctX -= 0.2;
+	else if (key == GLUT_KEY_PAGE_UP) {
+		if (active == STRADLE_CARRIER && SPREADER_LOWER_LIMIT < spHeight) {
+			spHeight -= 0.01;
 		}
 	}
+	else {
+		handleKeyPress(key);
+	}
+
 	glutPostRedisplay();
 }
 
 void keyboard(unsigned char key, int x, int y) {
-	if (key == 'w') {
-		camY += 0.5;
+	if (key == 27) {
+		glutDestroyWindow(winId);
+		exit(0);
 	}
-	else if (key == 's') {
-		if (camY >= 0.5) {
-			camY -= 0.5;
-		}
-	}
-	else if (key == 'a') {
-		rotY += 3.0;
-	}
-	else if (key == 'd') {
-		rotY -= 3.0;
-	}
-	else if (key == '8') {
-		moveZ += 1;
-	}
-	else if (key == '5') {
-		moveZ -= 1;
-	}
-	else if (key == '4') {
-		moveX += 1;
-	}
-	else if (key == '6') {
-		moveX -= 1;
+	else if (key == '0') {
+		active = NONE;
 	}
 	else if (key == '1') {
-		onUse = STRADLE_CARRIER;
+		active = STRADLE_CARRIER;
+		rotX = 0.0;
+		rotY = 3.13;
 	}
 	else if (key == '2') {
-		onUse = CONTAINER_TRUCK;
+		active = CONTAINER_TRUCK;
+		rotX = 0.0;
+		rotY = 3.13;
 	}
-	else if (onUse == STRADLE_CARRIER && key == ' ') {
-		if (attachedTo == STRADLE_CARRIER) {
-			GLfloat diffX = ctX - scX;
-			GLfloat diffZ = ctZ - scZ;
+	else if (key == 'w') {
+		handleKeyPress(GLUT_KEY_UP);
+	}
+	else if (key == 'a') {
+		handleKeyPress(GLUT_KEY_LEFT);
+	}
+	else if (key == 's') {
+		handleKeyPress(GLUT_KEY_DOWN);
+	}
+	else if (key == 'd') {
+		handleKeyPress(GLUT_KEY_RIGHT);
+	}
+	else if (active == STRADLE_CARRIER && key == ' ') {
+		if (attachedTo == CNT_SC) {
+			GLfloat diffX = posCt[0] - posSc[0];
+			GLfloat diffZ = posCt[2] - posSc[2];
 
-			if ((diffX > 0.2 && diffX < 0.8) && (diffZ > -0.8 && diffZ < -0.2)) {
-				attachedTo = CONTAINER_TRUCK;
+			if ((diffX > 1.1 && diffX < 1.5) && (diffZ > 3.1 && diffZ < 3.4)) {
+				attachedTo = CNT_CT;
 			}
 			else {
-				attachedTo = C_NONE;
-				cnY = 0;
+				attachedTo = CNT_NONE;
+				posCn[1] = 0;
 			}
 		}
 		else {
-			GLfloat diffX = cnX - scX;
-			GLfloat diffZ = cnZ - scZ;
+			GLfloat diffX = posCn[0] - posSc[0];
+			GLfloat diffY = (posSc[1] - (spHeight * 5) + 2.68) - posCn[1];
+			GLfloat diffZ = posCn[2] - posSc[2];
 
-			if (attachedTo == C_NONE) {
-				if ((diffX > 0.31 && diffX < 0.7) && (diffZ > -0.1 && diffZ < 0.7) && spHeight >= 0.5) {
-					attachedTo = STRADLE_CARRIER;
-				}
-			}
-			else if (attachedTo == CONTAINER_TRUCK) {
-				if ((diffX > 0.2 && diffX < 0.7) && (diffZ > -0.1 && diffZ < 0.7) && spHeight >= 0.41) {
-					attachedTo = STRADLE_CARRIER;
-				}
+			if ((diffX > 1.2 && diffX < 1.5) && (diffZ > 1.9 && diffZ < 2.7) && (diffY > 0 && diffY < 0.15)) {
+				attachedTo = CNT_SC;
 			}
 		}
 	}
@@ -952,22 +1368,43 @@ void keyboard(unsigned char key, int x, int y) {
 	glutPostRedisplay();
 }
 
-void timer(int x) {
-	for (int i = 0; i < 5; i++) {
-		if (vehicleTurn[i]) {
-			vehicleZ[i] -= 0.2;
+void mouse(int x, int y) {
+	int midX = winW / 2;
+	int midY = winH / 2;
 
-			if (vehicleZ[i] < -20) {
-				vehicleType[i] = rand() % 4;
-				vehicleTurn[i] = false;
+	if (x != midX || y != midY) {
+		glutWarpPointer(midX, midY);
+
+		if (active == STRADLE_CARRIER) {
+			rotY += (GLfloat)((midX - x)) / 1000;
+		}
+		else {
+			rotY -= (GLfloat)((midX - x)) / 1000;
+		}
+
+		rotX += (GLfloat)((midY - y)) / 500;
+
+		if (rotX < 0.0) rotX = 0.0;
+		if (rotX > 3.0) rotX = 3.0;
+
+		glutPostRedisplay();
+	}
+}
+
+void timer(int x) {
+	for (int i = 0; i < 3; i++) {
+		if (dirTrucks[i]) {
+			posTrucks[i][1] -= 0.2;
+
+			if (posTrucks[i][1] < -20) {
+				dirTrucks[i] = false;
 			}
 		}
 		else {
-			vehicleZ[i] += 0.2;
+			posTrucks[i][1] += 0.2;
 
-			if (vehicleZ[i] > 30) {
-				vehicleType[i] = rand() % 4;
-				vehicleTurn[i] = true;
+			if (posTrucks[i][1] > 45) {
+				dirTrucks[i] = true;
 			}
 		}
 	}
@@ -977,23 +1414,44 @@ void timer(int x) {
 }
 
 void init() {
-	glClearColor(0.0, 0.364, 0.741, 1.0);
+	GLfloat globalAmbient[] = { 0.6, 0.6, 0.6, 0.0 };
+	glLightModelfv(GL_LIGHT_MODEL_AMBIENT, globalAmbient);
+
 	glGenTextures(TEXTURE_COUNT, texture);
 	loadExternalTextures();
 
 	glEnable(GL_DEPTH_TEST);
 	glEnable(GL_CULL_FACE);
 
-	glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE);
+	glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
+
+	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+	glHint(GL_LINE_SMOOTH_HINT, GL_DONT_CARE);
+	glShadeModel(GL_SMOOTH);
+
+	glEnable(GL_LINE_SMOOTH);
+	glEnable(GL_LIGHTING);
+
+	glEnable(GL_LIGHT0);
+	glEnable(GL_LIGHT1);
+	glEnable(GL_LIGHT2);
+	glEnable(GL_LIGHT3);
+	glEnable(GL_LIGHT4);
+
+	glEnable(GL_COLOR_MATERIAL);
+	glEnable(GL_NORMALIZE);
 }
 
 void changeSize(GLsizei w, GLsizei h) {
+	winW = w;
+	winH = h;
+
 	glViewport(0, 0, w, h);
 	GLfloat aspect_ratio = h == 0 ? w / 1 : (GLfloat)w / (GLfloat)h;
 
 	glMatrixMode(GL_PROJECTION);
 	glLoadIdentity();
-	gluPerspective(120.0, aspect_ratio, 1.0, 100.0);
+	gluPerspective(120.0, aspect_ratio, 1.0, 150.0);
 	glMatrixMode(GL_MODELVIEW);
 	glLoadIdentity();
 }
@@ -1001,24 +1459,30 @@ void changeSize(GLsizei w, GLsizei h) {
 int main(int argc, char** argv) {
 	srand(time(NULL));
 
-	for (int j = 0; j < 4; j++) {
-		for (int i = 0; i < 10; i++) {
-			tx_stackBottom[j][i] = rand() % 3;
-			tx_stackTop[j][i] = rand() % 2;
-		}
+	// Container Stacks
+	for (int i = 0; i < 44; i++) {
+		stack1[i] = CStacks[rand() % 14];
+		stack2[i] = CStacks[rand() % 14];
 	}
 
-	for (int i = 0; i < 5; i++) {
-		vehicleType[i] = rand() % 4;
-		vehicleTurn[i] = (rand() % 2 == 0);
+	for (int i = 44; i < 100; i++) {
+		stack2[i] = CStacks[rand() % 14];
+	}
 
-		if (vehicleTurn[i]) {
-			vehicleZ[i] = rand() % 30;
+	// Trucks
+	for (int i = 0; i < 3; i++) {
+		dirTrucks[i] = (rand() % 2 == 0);
+
+		if (dirTrucks[i]) {
+			posTrucks[i][1] = rand() % 30;
 		}
 		else {
-			vehicleZ[i] = -(rand() % 20);
+			posTrucks[i][1] = -(rand() % 20);
 		}
 	}
+	posTrucks[0][0] = -16.38;
+	posTrucks[1][0] = 31.41;
+	posTrucks[2][0] = 47.09;
 
 	glutInit(&argc, argv);
 
@@ -1027,13 +1491,16 @@ int main(int argc, char** argv) {
 	glutInitWindowSize(500, 500);
 	glutInitWindowPosition(150, 150);
 
-	glutCreateWindow("Straddle Carrier");
+	winId = glutCreateWindow("Straddle Carrier");
+	glutFullScreen();
 
 	glutDisplayFunc(display);
 	glutReshapeFunc(changeSize);
 
 	glutKeyboardFunc(keyboard);
 	glutSpecialFunc(keyboardSpecial);
+	glutPassiveMotionFunc(mouse);
+	glutSetCursor(GLUT_CURSOR_NONE);
 
 	glutTimerFunc(60.0, timer, 1);
 	init();
