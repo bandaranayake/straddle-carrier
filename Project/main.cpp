@@ -68,7 +68,7 @@ using namespace std;
 GLfloat rotX = 0.0f, rotY = 3.13f;
 
 GLfloat posCam[3];
-GLfloat posCenter[3];
+GLfloat posCenter[3] = {0, 1, 0};
 
 GLfloat posSc[] = { -0.9f, 0.0f, -14.0f };
 GLfloat posCt[] = { -0.7f, 0.0f, 48.0f };
@@ -1132,32 +1132,31 @@ void display() {
 	// Camera
 	if (active == STRADLE_CARRIER) {
 		posCenter[0] = posSc[0] + 0.9;
-		posCenter[1] = 1.0;
 		posCenter[2] = posSc[2] + 1.6;
+
+		GLfloat camX = posCenter[0] + (CAMERA_RAD * sin(rotY));
+		GLfloat camY = 2.0 + rotX;
+		GLfloat camZ = posCenter[2] + (CAMERA_RAD * cos(rotY));
+
+		gluLookAt(camX, camY, camZ, posCenter[0], posCenter[1], posCenter[2], 0.0, 1.0, 0.0);
 	}
 	else if (active == CONTAINER_TRUCK) {
 		posCenter[0] = posCt[0] - 0.375;
-		posCenter[1] = 1.0;
 		posCenter[2] = posCt[2] - 2.3;
-	}
 
-	if (active == NONE) {
-		gluLookAt(0.0, 2.0 + (rotX * 5), 5.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0);
-
-		glTranslatef(posCam[0], 0.0, posCam[2]);
-		glRotatef(rotY * 30, 0.0f, 1.0f, 0.0f);
-	}
-	else {
 		GLfloat camX = posCenter[0] + (CAMERA_RAD * sin(rotY));
 		GLfloat camY = 2.0 + rotX;
-		GLfloat camZ;
+		GLfloat camZ = posCenter[2] - (CAMERA_RAD * cos(rotY));;
 
-		if (active == STRADLE_CARRIER) {
-			camZ = posCenter[2] + (CAMERA_RAD * cos(rotY));
-		}
-		else {
-			camZ = posCenter[2] - (CAMERA_RAD * cos(rotY));
-		}
+		gluLookAt(camX, camY, camZ, posCenter[0], posCenter[1], posCenter[2], 0.0, 1.0, 0.0);
+	}
+	else if (active == NONE) {
+		posCenter[0] = posCam[0] - 0.375;
+		posCenter[2] = posCam[2] - 2.3;
+
+		GLfloat camX = posCenter[0] + (CAMERA_RAD * sin(rotY));
+		GLfloat camY = 2.0 + rotX;
+		GLfloat camZ = posCenter[2] - (CAMERA_RAD * cos(rotY));;
 
 		gluLookAt(camX, camY, camZ, posCenter[0], posCenter[1], posCenter[2], 0.0, 1.0, 0.0);
 	}
@@ -1235,17 +1234,63 @@ void display() {
 
 void handleKeyPress(unsigned char key) {
 	if (active == NONE) {
-		if (key == GLUT_KEY_UP) {
-			posCam[2] += 1.0;
+		int angle = (int)rotY % 6;
+		
+		if (angle > -0.75 && angle < 0.75) {
+			if (key == GLUT_KEY_UP) {
+				posCam[2] += 1.0;
+			}
+			else if (key == GLUT_KEY_DOWN) {
+				posCam[2] -= 1.0;
+			}
+			else if (key == GLUT_KEY_LEFT) {
+				posCam[0] += 1.0;
+			}
+			else if (key == GLUT_KEY_RIGHT) {
+				posCam[0] -= 1.0;
+			}
 		}
-		else if (key == GLUT_KEY_DOWN) {
-			posCam[2] -= 1.0;
+		else if (angle > 0.75 && angle < 2.25) {
+			if (key == GLUT_KEY_UP) {
+				posCam[0] -= 1.0;
+			}
+			else if (key == GLUT_KEY_DOWN) {
+				posCam[0] += 1.0;
+			}
+			else if (key == GLUT_KEY_LEFT) {
+				posCam[2] += 1.0;
+			}
+			else if (key == GLUT_KEY_RIGHT) {
+				posCam[2] -= 1.0;
+			}
 		}
-		else if (key == GLUT_KEY_LEFT) {
-			posCam[0] += 1.0;
+		else if (angle > 2.25 && angle < 3.75) {
+			if (key == GLUT_KEY_UP) {
+				posCam[2] -= 1.0;
+			}
+			else if (key == GLUT_KEY_DOWN) {
+				posCam[2] += 1.0;
+			}
+			else if (key == GLUT_KEY_LEFT) {
+				posCam[0] -= 1.0;
+			}
+			else if (key == GLUT_KEY_RIGHT) {
+				posCam[0] += 1.0;
+			}
 		}
-		else if (key == GLUT_KEY_RIGHT) {
-			posCam[0] -= 1.0;
+		else {
+			if (key == GLUT_KEY_UP) {
+				posCam[0] += 1.0;
+			}
+			else if (key == GLUT_KEY_DOWN) {
+				posCam[0] -= 1.0;
+			}
+			else if (key == GLUT_KEY_LEFT) {
+				posCam[2] -= 1.0;
+			}
+			else if (key == GLUT_KEY_RIGHT) {
+				posCam[2] += 1.0;
+			}
 		}
 	}
 	else if (active == STRADLE_CARRIER) {
@@ -1408,7 +1453,7 @@ void timer(int x) {
 			}
 		}
 	}
-
+	
 	glutPostRedisplay();
 	glutTimerFunc(60, timer, 1);
 }
