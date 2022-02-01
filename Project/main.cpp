@@ -3,7 +3,7 @@
 #include <fstream>
 #include <string>
 #include <math.h>
-#include <time.h> 
+#include <time.h>
 #include <GL/glut.h>
 
 #define PI 3.1415927
@@ -42,7 +42,7 @@
 #define TX_WALL3 20
 #define TX_ROOF 21
 #define TX_CEILING 22
-#define TX_FLOOR2 23
+#define TX_FLOOR2 23 
 #define TX_CONT6 24
 #define TX_CONT7 25
 #define TX_CONT8 26
@@ -62,19 +62,10 @@
 
 #define CO_CN1 0
 #define CO_CN2 1
-#define CO_SKYBOX 2
 
 using namespace std;
 
-struct BitMapFile
-{
-	int sizeX;
-	int sizeY;
-	unsigned char* data;
-};
-
-GLfloat rotX = 0.0f;
-GLfloat rotY = 3.13f;
+GLfloat rotX = 0.0f, rotY = 3.13f;
 
 GLfloat posCam[3];
 GLfloat posCenter[3];
@@ -82,14 +73,14 @@ GLfloat posCenter[3];
 GLfloat posSc[] = { -0.9f, 0.0f, -14.0f };
 GLfloat posCt[] = { -0.7f, 0.0f, 48.0f };
 GLfloat posCn[] = { -0.45f, 0.0f, 3.0f };
-
 GLfloat posTrucks[3][2];
 bool dirTrucks[3];
 
 GLfloat spHeight = 0.0;
 
-static GLfloat coordinates[2][6][8] = {
-	{
+// Container Type, Face, (x, y) of Corner
+static GLfloat containers_tex[2][6][8] = {
+	{ // Main Container
 		{0.858, 0.650246, 0.142, 0.650246, 0.142, 0.35468, 0.858, 0.35468},
 		{0.858, 0.650246, 0.858, 0.35468, 0.142, 0.35468, 0.142, 0.650246},
 		{0.0, 0.35468, 0.0, 0.650246, 0.142, 0.650246, 0.142, 0.35468},
@@ -97,7 +88,7 @@ static GLfloat coordinates[2][6][8] = {
 		{0.858, 1.0, 0.142, 1.0, 0.142, 0.650246, 0.858, 0.650246},
 		{0.858, 0.0, 0.858, 0.35468, 0.142, 0.35468, 0.142, 0.0}
 	},
-	{
+	{ // Other Containers
 		{0.774, 0.668657, 0.22, 0.668657, 0.22, 0.334328, 0.774, 0.334328},
 		{0.774, 0.668657, 0.774, 0.334328, 0.22, 0.334328,  0.22, 0.668657},
 		{0.0, 0.668657, 0.0, 0.334328, 0.22, 0.334328, 0.22, 0.668657},
@@ -116,10 +107,17 @@ bool showAxes = false;
 bool showGrid = false;
 
 static unsigned int texture[TEXTURE_COUNT];
-static unsigned int CStacks[15] = { TX_CONT2, TX_CONT3, TX_CONT4, TX_CONT5, TX_CONT6, TX_CONT7, TX_CONT8,
+static unsigned int container_textures[14] = { TX_CONT2, TX_CONT3, TX_CONT4, TX_CONT5, TX_CONT6, TX_CONT7, TX_CONT8,
 								TX_CONT9, TX_CONT10, TX_CONT11, TX_CONT12, TX_CONT13, TX_CONT14, TX_CONT15 };
-unsigned int stack1[44];
-unsigned int stack2[100];
+
+unsigned int container_stack1[44];
+unsigned int container_stack2[100];
+
+struct BitMapFile {
+	int sizeX;
+	int sizeY;
+	unsigned char* data;
+};
 
 BitMapFile* getbmp(string filename) {
 	int offset, headerSize;
@@ -174,6 +172,8 @@ BitMapFile* getbmp(string filename) {
 }
 
 void loadExternalTextures() {
+	glGenTextures(TEXTURE_COUNT, texture);
+
 	BitMapFile* image[TEXTURE_COUNT];
 	image[TX_METAL_RED] = getbmp("textures/metal_red.bmp");
 	image[TX_METAL_GRAY] = getbmp("textures/metal_gray.bmp");
@@ -263,11 +263,11 @@ void drawGrid() {
 	glEnd();
 }
 
-void drawCube(GLfloat x, GLfloat y, GLfloat z, GLfloat w, GLfloat h, GLfloat l, int tx[]) {
+void drawCube(GLfloat x, GLfloat y, GLfloat z, GLfloat w, GLfloat h, GLfloat l, int texture_id[]) {
 	glEnable(GL_TEXTURE_2D);
 
 	// TOP
-	glBindTexture(GL_TEXTURE_2D, texture[tx[0]]);
+	glBindTexture(GL_TEXTURE_2D, texture[texture_id[0]]);
 	glBegin(GL_QUADS);
 	glTexCoord2f(0.0, 0.0); glVertex3f(x, y + h, z);
 	glTexCoord2f(1.0, 0.0); glVertex3f(x, y + h, z + l);
@@ -276,7 +276,7 @@ void drawCube(GLfloat x, GLfloat y, GLfloat z, GLfloat w, GLfloat h, GLfloat l, 
 	glEnd();
 
 	// BOTTOM
-	glBindTexture(GL_TEXTURE_2D, texture[tx[1]]);
+	glBindTexture(GL_TEXTURE_2D, texture[texture_id[1]]);
 	glBegin(GL_QUADS);
 	glTexCoord2f(0.0, 0.0); glVertex3f(x, y, z);
 	glTexCoord2f(0.0, 1.0); glVertex3f(x + w, y, z);
@@ -285,7 +285,7 @@ void drawCube(GLfloat x, GLfloat y, GLfloat z, GLfloat w, GLfloat h, GLfloat l, 
 	glEnd();
 
 	// FRONT
-	glBindTexture(GL_TEXTURE_2D, texture[tx[2]]);
+	glBindTexture(GL_TEXTURE_2D, texture[texture_id[2]]);
 	glBegin(GL_QUADS);
 	glTexCoord2f(0.0, 0.0); glVertex3f(x, y, z + l);
 	glTexCoord2f(1.0, 0.0); glVertex3f(x + w, y, z + l);
@@ -294,7 +294,7 @@ void drawCube(GLfloat x, GLfloat y, GLfloat z, GLfloat w, GLfloat h, GLfloat l, 
 	glEnd();
 
 	// BACK
-	glBindTexture(GL_TEXTURE_2D, texture[tx[3]]);
+	glBindTexture(GL_TEXTURE_2D, texture[texture_id[3]]);
 	glBegin(GL_QUADS);
 	glTexCoord2f(0.0, 0.0); glVertex3f(x, y, z);
 	glTexCoord2f(0.0, 1.0); glVertex3f(x, y + h, z);
@@ -303,7 +303,7 @@ void drawCube(GLfloat x, GLfloat y, GLfloat z, GLfloat w, GLfloat h, GLfloat l, 
 	glEnd();
 
 	// LEFT
-	glBindTexture(GL_TEXTURE_2D, texture[tx[4]]);
+	glBindTexture(GL_TEXTURE_2D, texture[texture_id[4]]);
 	glBegin(GL_QUADS);
 	glTexCoord2f(0.0, 0.0); glVertex3f(x, y, z);
 	glTexCoord2f(1.0, 0.0); glVertex3f(x, y, z + l);
@@ -312,7 +312,7 @@ void drawCube(GLfloat x, GLfloat y, GLfloat z, GLfloat w, GLfloat h, GLfloat l, 
 	glEnd();
 
 	// RIGHT
-	glBindTexture(GL_TEXTURE_2D, texture[tx[5]]);
+	glBindTexture(GL_TEXTURE_2D, texture[texture_id[5]]);
 	glBegin(GL_QUADS);
 	glTexCoord2f(0.0, 0.0); glVertex3f(x + w, y, z);
 	glTexCoord2f(0.0, 1.0); glVertex3f(x + w, y + h, z);
@@ -323,67 +323,7 @@ void drawCube(GLfloat x, GLfloat y, GLfloat z, GLfloat w, GLfloat h, GLfloat l, 
 	glDisable(GL_TEXTURE_2D);
 }
 
-void drawCube(GLfloat x, GLfloat y, GLfloat z, GLfloat w, GLfloat h, GLfloat l, int tx, int co) {
-	glEnable(GL_TEXTURE_2D);
-
-	// TOP
-	glBindTexture(GL_TEXTURE_2D, texture[tx]);
-	glBegin(GL_QUADS);
-	glTexCoord2f(coordinates[co][0][0], coordinates[co][0][1]); glVertex3f(x, y + h, z);
-	glTexCoord2f(coordinates[co][0][2], coordinates[co][0][3]); glVertex3f(x, y + h, z + l);
-	glTexCoord2f(coordinates[co][0][4], coordinates[co][0][5]); glVertex3f(x + w, y + h, z + l);
-	glTexCoord2f(coordinates[co][0][6], coordinates[co][0][7]); glVertex3f(x + w, y + h, z);
-	glEnd();
-
-	// BOTTOM
-	glBindTexture(GL_TEXTURE_2D, texture[tx]);
-	glBegin(GL_QUADS);
-	glTexCoord2f(coordinates[co][1][0], coordinates[co][1][1]); glVertex3f(x, y, z);
-	glTexCoord2f(coordinates[co][1][2], coordinates[co][1][3]); glVertex3f(x + w, y, z);
-	glTexCoord2f(coordinates[co][1][4], coordinates[co][1][5]); glVertex3f(x + w, y, z + l);
-	glTexCoord2f(coordinates[co][1][6], coordinates[co][1][7]); glVertex3f(x, y, z + l);
-	glEnd();
-
-	// FRONT
-	glBindTexture(GL_TEXTURE_2D, texture[tx]);
-	glBegin(GL_QUADS);
-	glTexCoord2f(coordinates[co][2][0], coordinates[co][2][1]); glVertex3f(x, y, z + l);
-	glTexCoord2f(coordinates[co][2][2], coordinates[co][2][3]); glVertex3f(x + w, y, z + l);
-	glTexCoord2f(coordinates[co][2][4], coordinates[co][2][5]); glVertex3f(x + w, y + h, z + l);
-	glTexCoord2f(coordinates[co][2][6], coordinates[co][2][7]); glVertex3f(x, y + h, z + l);
-	glEnd();
-
-	// BACK
-	glBindTexture(GL_TEXTURE_2D, texture[tx]);
-	glBegin(GL_QUADS);
-	glTexCoord2f(coordinates[co][3][0], coordinates[co][3][1]); glVertex3f(x, y, z);
-	glTexCoord2f(coordinates[co][3][2], coordinates[co][3][3]); glVertex3f(x, y + h, z);
-	glTexCoord2f(coordinates[co][3][4], coordinates[co][3][5]); glVertex3f(x + w, y + h, z);
-	glTexCoord2f(coordinates[co][3][6], coordinates[co][3][7]); glVertex3f(x + w, y, z);
-	glEnd();
-
-	// LEFT
-	glBindTexture(GL_TEXTURE_2D, texture[tx]);
-	glBegin(GL_QUADS);
-	glTexCoord2f(coordinates[co][4][0], coordinates[co][4][1]); glVertex3f(x, y, z);
-	glTexCoord2f(coordinates[co][4][2], coordinates[co][4][3]); glVertex3f(x, y, z + l);
-	glTexCoord2f(coordinates[co][4][4], coordinates[co][4][5]); glVertex3f(x, y + h, z + l);
-	glTexCoord2f(coordinates[co][4][6], coordinates[co][4][7]); glVertex3f(x, y + h, z);
-	glEnd();
-
-	// RIGHT
-	glBindTexture(GL_TEXTURE_2D, texture[tx]);
-	glBegin(GL_QUADS);
-	glTexCoord2f(coordinates[co][5][0], coordinates[co][5][1]); glVertex3f(x + w, y, z);
-	glTexCoord2f(coordinates[co][5][2], coordinates[co][5][3]); glVertex3f(x + w, y + h, z);
-	glTexCoord2f(coordinates[co][5][4], coordinates[co][5][5]); glVertex3f(x + w, y + h, z + l);
-	glTexCoord2f(coordinates[co][5][6], coordinates[co][5][7]); glVertex3f(x + w, y, z + l);
-	glEnd();
-
-	glDisable(GL_TEXTURE_2D);
-}
-
-void drawCylinder(GLfloat radius, GLfloat height, int tx[]) {
+void drawCylinder(GLfloat radius, GLfloat height, int texture_id[]) {
 	GLfloat y = 0.0, z = 0.0;
 	GLfloat txX = 0.0, txY = 0.0;
 	GLfloat xcos = 0.0, ysin = 0.0;
@@ -392,7 +332,7 @@ void drawCylinder(GLfloat radius, GLfloat height, int tx[]) {
 	glEnable(GL_TEXTURE_2D);
 
 	// TUBE
-	glBindTexture(GL_TEXTURE_2D, texture[tx[0]]);
+	glBindTexture(GL_TEXTURE_2D, texture[texture_id[0]]);
 
 	glBegin(GL_QUAD_STRIP);
 	for (GLfloat angle = 2 * PI; angle >= 0.0; angle = angle - angle_stepsize) {
@@ -406,7 +346,7 @@ void drawCylinder(GLfloat radius, GLfloat height, int tx[]) {
 	glEnd();
 
 	// BASE
-	glBindTexture(GL_TEXTURE_2D, texture[tx[1]]);
+	glBindTexture(GL_TEXTURE_2D, texture[texture_id[1]]);
 
 	glBegin(GL_POLYGON);
 	for (GLfloat angle = 0.0; angle < 2 * PI; angle = angle + angle_stepsize) {
@@ -423,7 +363,7 @@ void drawCylinder(GLfloat radius, GLfloat height, int tx[]) {
 	glEnd();
 
 	// TOP
-	glBindTexture(GL_TEXTURE_2D, texture[tx[2]]);
+	glBindTexture(GL_TEXTURE_2D, texture[texture_id[2]]);
 
 	glBegin(GL_POLYGON);
 	for (GLfloat angle = 2 * PI - angle_stepsize; angle >= 0.0; angle = angle - angle_stepsize) {
@@ -770,6 +710,66 @@ void drawTruck() {
 	glPopMatrix();
 }
 
+void drawContainer(GLfloat x, GLfloat y, GLfloat z, GLfloat w, GLfloat h, GLfloat l, int texture_id, int container_id) {
+	glEnable(GL_TEXTURE_2D);
+
+	// TOP
+	glBindTexture(GL_TEXTURE_2D, texture[texture_id]);
+	glBegin(GL_QUADS);
+	glTexCoord2f(containers_tex[container_id][0][0], containers_tex[container_id][0][1]); glVertex3f(x, y + h, z);
+	glTexCoord2f(containers_tex[container_id][0][2], containers_tex[container_id][0][3]); glVertex3f(x, y + h, z + l);
+	glTexCoord2f(containers_tex[container_id][0][4], containers_tex[container_id][0][5]); glVertex3f(x + w, y + h, z + l);
+	glTexCoord2f(containers_tex[container_id][0][6], containers_tex[container_id][0][7]); glVertex3f(x + w, y + h, z);
+	glEnd();
+
+	// BOTTOM
+	glBindTexture(GL_TEXTURE_2D, texture[texture_id]);
+	glBegin(GL_QUADS);
+	glTexCoord2f(containers_tex[container_id][1][0], containers_tex[container_id][1][1]); glVertex3f(x, y, z);
+	glTexCoord2f(containers_tex[container_id][1][2], containers_tex[container_id][1][3]); glVertex3f(x + w, y, z);
+	glTexCoord2f(containers_tex[container_id][1][4], containers_tex[container_id][1][5]); glVertex3f(x + w, y, z + l);
+	glTexCoord2f(containers_tex[container_id][1][6], containers_tex[container_id][1][7]); glVertex3f(x, y, z + l);
+	glEnd();
+
+	// FRONT
+	glBindTexture(GL_TEXTURE_2D, texture[texture_id]);
+	glBegin(GL_QUADS);
+	glTexCoord2f(containers_tex[container_id][2][0], containers_tex[container_id][2][1]); glVertex3f(x, y, z + l);
+	glTexCoord2f(containers_tex[container_id][2][2], containers_tex[container_id][2][3]); glVertex3f(x + w, y, z + l);
+	glTexCoord2f(containers_tex[container_id][2][4], containers_tex[container_id][2][5]); glVertex3f(x + w, y + h, z + l);
+	glTexCoord2f(containers_tex[container_id][2][6], containers_tex[container_id][2][7]); glVertex3f(x, y + h, z + l);
+	glEnd();
+
+	// BACK
+	glBindTexture(GL_TEXTURE_2D, texture[texture_id]);
+	glBegin(GL_QUADS);
+	glTexCoord2f(containers_tex[container_id][3][0], containers_tex[container_id][3][1]); glVertex3f(x, y, z);
+	glTexCoord2f(containers_tex[container_id][3][2], containers_tex[container_id][3][3]); glVertex3f(x, y + h, z);
+	glTexCoord2f(containers_tex[container_id][3][4], containers_tex[container_id][3][5]); glVertex3f(x + w, y + h, z);
+	glTexCoord2f(containers_tex[container_id][3][6], containers_tex[container_id][3][7]); glVertex3f(x + w, y, z);
+	glEnd();
+
+	// LEFT
+	glBindTexture(GL_TEXTURE_2D, texture[texture_id]);
+	glBegin(GL_QUADS);
+	glTexCoord2f(containers_tex[container_id][4][0], containers_tex[container_id][4][1]); glVertex3f(x, y, z);
+	glTexCoord2f(containers_tex[container_id][4][2], containers_tex[container_id][4][3]); glVertex3f(x, y, z + l);
+	glTexCoord2f(containers_tex[container_id][4][4], containers_tex[container_id][4][5]); glVertex3f(x, y + h, z + l);
+	glTexCoord2f(containers_tex[container_id][4][6], containers_tex[container_id][4][7]); glVertex3f(x, y + h, z);
+	glEnd();
+
+	// RIGHT
+	glBindTexture(GL_TEXTURE_2D, texture[texture_id]);
+	glBegin(GL_QUADS);
+	glTexCoord2f(containers_tex[container_id][5][0], containers_tex[container_id][5][1]); glVertex3f(x + w, y, z);
+	glTexCoord2f(containers_tex[container_id][5][2], containers_tex[container_id][5][3]); glVertex3f(x + w, y + h, z);
+	glTexCoord2f(containers_tex[container_id][5][4], containers_tex[container_id][5][5]); glVertex3f(x + w, y + h, z + l);
+	glTexCoord2f(containers_tex[container_id][5][6], containers_tex[container_id][5][7]); glVertex3f(x + w, y, z + l);
+	glEnd();
+
+	glDisable(GL_TEXTURE_2D);
+}
+
 void drawWall(GLfloat x, GLfloat y, GLfloat z, GLfloat w, GLfloat h, GLfloat l, int tx) {
 	glEnable(GL_TEXTURE_2D);
 	glBindTexture(GL_TEXTURE_2D, texture[tx]);
@@ -1032,18 +1032,18 @@ void drawEnv() {
 
 	// Container Stacks
 	for (int i = 0; i < 44; i++) {
-		drawCube(58.3, 0.0, 57.88 - (i * 2.0), 1.7, 1.64, 2.0, stack1[i], CO_CN2);
-		drawCube(58.3, 1.64, 57.88 - (i * 2.0), 1.7, 1.64, 2.0, stack1[43 - i], CO_CN2);
+		drawContainer(58.3, 0.0, 57.88 - (i * 2.0), 1.7, 1.64, 2.0, container_stack1[i], CO_CN2);
+		drawContainer(58.3, 1.64, 57.88 - (i * 2.0), 1.7, 1.64, 2.0, container_stack1[43 - i], CO_CN2);
 	}
 
 	for (int i = 0; i < 4; i++) {
 		for (int j = 0; j < 25; j++) {
 			int t = (i * 25) + j;
-			drawCube(40.0 - (16 * i), 0.0, 28 - (j * 2.0), 1.7, 1.64, 2.0, stack2[t], CO_CN2);
-			drawCube(40.0 - (16 * i), 1.64, 28 - (j * 2.0), 1.7, 1.64, 2.0, stack2[99 - t], CO_CN2);
+			drawContainer(40.0 - (16 * i), 0.0, 28 - (j * 2.0), 1.7, 1.64, 2.0, container_stack2[t], CO_CN2);
+			drawContainer(40.0 - (16 * i), 1.64, 28 - (j * 2.0), 1.7, 1.64, 2.0, container_stack2[99 - t], CO_CN2);
 
-			drawCube(38.3 - (16 * i), 0.0, 28 - (j * 2.0), 1.7, 1.64, 2.0, stack2[t], CO_CN2);
-			drawCube(38.3 - (16 * i), 1.64, 28 - (j * 2.0), 1.7, 1.64, 2.0, stack2[99 - t], CO_CN2);
+			drawContainer(38.3 - (16 * i), 0.0, 28 - (j * 2.0), 1.7, 1.64, 2.0, container_stack2[t], CO_CN2);
+			drawContainer(38.3 - (16 * i), 1.64, 28 - (j * 2.0), 1.7, 1.64, 2.0, container_stack2[99 - t], CO_CN2);
 		}
 	}
 
@@ -1192,7 +1192,7 @@ void display() {
 	glPushMatrix();
 	glTranslatef(posCn[0], posCn[1], posCn[2]);
 	glRotatef(180, 0, 1, 0);
-	drawCube(0.0, 0.0, 0.0, 0.85, 0.82, 2.0, TX_CONT1, CO_CN1);
+	drawContainer(0.0, 0.0, 0.0, 0.85, 0.82, 2.0, TX_CONT1, CO_CN1);
 	glPopMatrix();
 
 	// Draw Truck
@@ -1225,7 +1225,7 @@ void display() {
 			glPopMatrix();
 
 			// Container
-			drawCube(posTrucks[i][0] - 0.7, 0.41, posTrucks[i][1] + 0.95, 0.85, 0.82, 2.0, TX_CONT1, CO_CN1);
+			drawContainer(posTrucks[i][0] - 0.7, 0.41, posTrucks[i][1] + 0.95, 0.85, 0.82, 2.0, TX_CONT1, CO_CN1);
 		}
 	}
 
@@ -1417,7 +1417,6 @@ void init() {
 	GLfloat globalAmbient[] = { 0.6, 0.6, 0.6, 0.0 };
 	glLightModelfv(GL_LIGHT_MODEL_AMBIENT, globalAmbient);
 
-	glGenTextures(TEXTURE_COUNT, texture);
 	loadExternalTextures();
 
 	glEnable(GL_DEPTH_TEST);
@@ -1451,7 +1450,7 @@ void changeSize(GLsizei w, GLsizei h) {
 
 	glMatrixMode(GL_PROJECTION);
 	glLoadIdentity();
-	gluPerspective(120.0, aspect_ratio, 1.0, 150.0);
+	gluPerspective(75.0, aspect_ratio, 1.0, 150.0);
 	glMatrixMode(GL_MODELVIEW);
 	glLoadIdentity();
 }
@@ -1461,12 +1460,11 @@ int main(int argc, char** argv) {
 
 	// Container Stacks
 	for (int i = 0; i < 44; i++) {
-		stack1[i] = CStacks[rand() % 14];
-		stack2[i] = CStacks[rand() % 14];
+		container_stack1[i] = container_textures[rand() % 14];
 	}
 
-	for (int i = 44; i < 100; i++) {
-		stack2[i] = CStacks[rand() % 14];
+	for (int i = 0; i < 100; i++) {
+		container_stack2[i] = container_textures[rand() % 14];
 	}
 
 	// Trucks
