@@ -1132,13 +1132,13 @@ void display() {
 	// Camera
 	if (active == STRADLE_CARRIER) {
 		posCenter[0] = posSc[0] + 0.9;
-		posCenter[2] = posSc[2] + 1.6;
+		posCenter[2] = posSc[2] + 1.0;
 
 		GLfloat camX = posCenter[0] + (CAMERA_RAD * sin(rotY));
-		GLfloat camY = 2.0 + rotX;
+		GLfloat camY = 4.0 + rotX;
 		GLfloat camZ = posCenter[2] + (CAMERA_RAD * cos(rotY));
 
-		gluLookAt(camX, camY, camZ, posCenter[0], posCenter[1], posCenter[2], 0.0, 1.0, 0.0);
+		gluLookAt(camX, camY, camZ, posCenter[0], posCenter[1] + 2, posCenter[2], 0.0, 1.0, 0.0);
 	}
 	else if (active == CONTAINER_TRUCK) {
 		posCenter[0] = posCt[0] - 0.375;
@@ -1155,7 +1155,7 @@ void display() {
 		posCenter[2] = posCam[2] - 2.3;
 
 		GLfloat camX = posCenter[0] + (CAMERA_RAD * sin(rotY));
-		GLfloat camY = 2.0 + rotX;
+		GLfloat camY = 1.0 + rotX;
 		GLfloat camZ = posCenter[2] - (CAMERA_RAD * cos(rotY));;
 
 		gluLookAt(camX, camY, camZ, posCenter[0], posCenter[1], posCenter[2], 0.0, 1.0, 0.0);
@@ -1238,58 +1238,58 @@ void handleKeyPress(unsigned char key) {
 		
 		if (angle > -0.75 && angle < 0.75) {
 			if (key == GLUT_KEY_UP) {
-				posCam[2] += 1.0;
+				posCam[2] += 0.5;
 			}
 			else if (key == GLUT_KEY_DOWN) {
-				posCam[2] -= 1.0;
+				posCam[2] -= 0.5;
 			}
 			else if (key == GLUT_KEY_LEFT) {
-				posCam[0] += 1.0;
+				posCam[0] += 0.5;
 			}
 			else if (key == GLUT_KEY_RIGHT) {
-				posCam[0] -= 1.0;
+				posCam[0] -= 0.5;
 			}
 		}
 		else if (angle > 0.75 && angle < 2.25) {
 			if (key == GLUT_KEY_UP) {
-				posCam[0] -= 1.0;
+				posCam[0] -= 0.5;
 			}
 			else if (key == GLUT_KEY_DOWN) {
-				posCam[0] += 1.0;
+				posCam[0] += 0.5;
 			}
 			else if (key == GLUT_KEY_LEFT) {
-				posCam[2] += 1.0;
+				posCam[2] += 0.5;
 			}
 			else if (key == GLUT_KEY_RIGHT) {
-				posCam[2] -= 1.0;
+				posCam[2] -= 0.5;
 			}
 		}
 		else if (angle > 2.25 && angle < 3.75) {
 			if (key == GLUT_KEY_UP) {
-				posCam[2] -= 1.0;
+				posCam[2] -= 0.5;
 			}
 			else if (key == GLUT_KEY_DOWN) {
-				posCam[2] += 1.0;
+				posCam[2] += 0.5;
 			}
 			else if (key == GLUT_KEY_LEFT) {
-				posCam[0] -= 1.0;
+				posCam[0] -= 0.5;
 			}
 			else if (key == GLUT_KEY_RIGHT) {
-				posCam[0] += 1.0;
+				posCam[0] += 0.5;
 			}
 		}
 		else {
 			if (key == GLUT_KEY_UP) {
-				posCam[0] += 1.0;
+				posCam[0] += 0.5;
 			}
 			else if (key == GLUT_KEY_DOWN) {
-				posCam[0] -= 1.0;
+				posCam[0] -= 0.5;
 			}
 			else if (key == GLUT_KEY_LEFT) {
-				posCam[2] -= 1.0;
+				posCam[2] -= 0.5;
 			}
 			else if (key == GLUT_KEY_RIGHT) {
-				posCam[2] += 1.0;
+				posCam[2] += 0.5;
 			}
 		}
 	}
